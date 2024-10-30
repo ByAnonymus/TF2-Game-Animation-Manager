@@ -5,12 +5,30 @@ from .additive_animation_porter import *
 from bpy.props import StringProperty, IntProperty, EnumProperty
 from .driver_defs import *
 def setup_ikchain(end_bone, bone_name, ik_name):
+    bpy.ops.object.mode_set(mode='EDIT')
+    cb = bpy.context.active_object.data.edit_bones.new(ik_name)
+
+    cb.head = bpy.context.active_object.data.edit_bones[end_bone].head
+    cb.tail = bpy.context.active_object.data.edit_bones[end_bone].tail
+    cb.matrix = bpy.context.active_object.data.edit_bones[end_bone].matrix
+    cb.parent = bpy.context.active_object.data.edit_bones[bone_name]
+    bpy.ops.object.mode_set(mode='POSE')
     bpy.context.active_object.pose.bones[end_bone].constraints.new('IK')
     constraint = bpy.context.active_object.pose.bones[end_bone].constraints["IK"]
     constraint.target = bpy.context.active_object
-    constraint.subtarget = bpy.context.active_object.pose.bones[ik_name]
+    constraint.subtarget = ik_name
     constraint.use_rotation = True
     constraint.chain_count = 3
+    eval = constraint.driver_add("influence")
+    d = eval.driver
+    d.type = "SCRIPTED"
+    d.expression = "radius_look"
+    v = d.variables.new()
+    v.name = "radius_look"
+    t = v.targets[0]
+    t.id_type = 'OBJECT'
+    t.id = bpy.data.objects[bpy.context.active_object.name]
+    t.data_path = "pose.bones[\"Properties\"][\"radius_look\"]"
 def const_create(anim_name, expression, variables, prop_names, suffix_enum):
     prop = anim_name.replace("_" + suffix_enum, "")
     Prop_holder = bpy.context.active_object.pose.bones["Prop_holder"]
@@ -364,7 +382,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
     bl_label = 'Port SMD Anims'
     #bl_description = 'Generate Bones (Properties, AIM, Movement)'
     bl_options = {'UNDO'}
-    suffix_enum : bpy.props.StringProperty()
+    suffix_enum : StringProperty()
     def execute(self, context):
         bpy.app.driver_namespace["angle"] = angle
         bpy.app.driver_namespace["movement"] = movement
@@ -417,7 +435,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         line_index = -1
         for i in buffer:
             line_index +=1
-            if ("$sequence \"") in i and ("aimmatrix") in i and ("_run") in i and ("crouch") not in i:
+            if ("$sequence \"") in i and ("aimmatrix") in i and ("run") in i and ("crouch") not in i and ("runS") not in i:
                 list.append(i.removesuffix("\n"))
                 list.append(buffer[line_index + 4].removeprefix("	\"").removesuffix("\"\n"))
                 list.append(buffer[line_index + 5].removeprefix("	\"").removesuffix("\"\n"))
@@ -513,7 +531,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         Properties_bone.keyframe_insert(data_path = '["Run_Duration"]', frame = 0)
         Properties_bone["Run_Duration"] = 1.0
         Properties_bone.keyframe_insert(data_path = '["Run_Duration"]', frame = bpy.context.active_object.pose.bones["bip_pelvis"].constraints["a_runNE_PRIMARY"].frame_end)
-        
+        setup_ikchain("bip_hand_L", "weapon_bone", "bip_hand_L.001")
         return {'FINISHED'}
     
 class BYANON_PT_anim_parent(bpy.types.Panel):
