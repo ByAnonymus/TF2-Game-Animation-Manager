@@ -10,18 +10,18 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum):
     Prop_holder = bpy.context.active_object.pose.bones["Prop_holder"]
     if bool(Prop_holder.get(prop)) == False:
         Prop_holder[prop] = float(0)
-    eval = Prop_holder.driver_add("[\"" + prop + "\"]")
-    d = eval.driver
-    d.type = "SCRIPTED"
-    d.expression = expression
-    for i in variables:
-        if i in d.expression:
-            v = d.variables.new()
-            v.name = i
-            t = v.targets[0]
-            t.id_type = 'OBJECT'
-            t.id = bpy.data.objects[bpy.context.active_object.name]
-            t.data_path = "pose.bones[\"Properties\"][\"" + i + "\"]"
+        eval = Prop_holder.driver_add("[\"" + prop + "\"]")
+        d = eval.driver
+        d.type = "SCRIPTED"
+        d.expression = expression
+        for i in variables:
+            if i in d.expression:
+                v = d.variables.new()
+                v.name = i
+                t = v.targets[0]
+                t.id_type = 'OBJECT'
+                t.id = bpy.data.objects[bpy.context.active_object.name]
+                t.data_path = "pose.bones[\"Properties\"][\"" + i + "\"]"
     for active_bone in bpy.context.active_object.pose.bones:
         if (active_bone.name not in ["Properties", "Movement", "rootTransform", "AIM"]) :
         
