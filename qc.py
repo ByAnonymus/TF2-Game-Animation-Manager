@@ -29,7 +29,8 @@ def setup_ikchain(end_bone, bone_name, ik_name):
     t.id_type = 'OBJECT'
     t.id = bpy.data.objects[bpy.context.active_object.name]
     t.data_path = "pose.bones[\"Properties\"][\"radius_look\"]"
-def const_create(anim_name, expression, variables, prop_names, suffix_enum):
+def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kwargs):
+    only_ik_bone = kwargs.get('only_ik', None)
     prop = anim_name.replace("_" + suffix_enum, "")
     Prop_holder = bpy.context.active_object.pose.bones["Prop_holder"]
     if bool(Prop_holder.get(prop)) == False:
@@ -112,6 +113,25 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum):
                 if n in constraint.name:
                     d.expression = "(" + d.expression + ")*" + n
             print("added constraint to " + active_bone.name+" for "+constraint.name)
+            if only_ik_bone:
+                for i in bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints:
+                    i.driver_remove("influence")
+                    eval = constraint.driver_add("influence")
+                    d = eval.driver
+                    d.type = "SCRIPTED"
+                    d.expression = "radius_move"
+                    for i in variables:
+                        if i in d.expression:
+                            v = d.variables.new()
+                            v.name = i
+                            t = v.targets[0]
+                            t.id_type = 'OBJECT'
+                            t.id = bpy.data.objects[bpy.context.active_object.name]
+                            t.data_path = "pose.bones[\"Properties\"][\"" + i + "\"]"
+                    for n in prop_names:
+                        if n in constraint.name:
+                            d.expression = "(" + d.expression + ")*" + n
+
 class BYANON_OT_anim_optimize(bpy.types.Operator):
     bl_idname = 'byanon.optimize'
     bl_label = 'Optimize'
@@ -395,7 +415,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         prop_names = ["move_x", "move_y", "radius_move", "angle_move", "look_x", "look_y","radius_look", "angle_look", "Crouch", "Stand_Duration", "Crouch_Duration","Run_Duration"]
         variables = ["radius_move", "angle_move","radius_look", "angle_look", "Crouch"]
         import_options =[]
-        
+        setup_ikchain("bip_hand_L", "weapon_bone", "bip_hand_L.001")
         Properties_bone = bpy.context.active_object.pose.bones['Properties']
         list = []
         line_index = -1
@@ -452,6 +472,11 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                 ANON_OT_load_additive.filepath = folder + "/" + b + ".smd"
                 create_action(b)
                 ANON_OT_load_additive.execute(ANON_OT_load_additive, context)
+                bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints.new('COPY_TRANSFORMS')
+                bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints["Copy Transforms"].target = bpy.context.active_object
+                bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints["Copy Transforms"].subtarget = "bip_hand_L"
+                bpy.context.active_object.pose.bones["bip_hand_L.001"].keyframe_insert(data_path="location",options={'INSERTKEY_VISUAL'}, frame = 0)
+                bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints.remove(bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints["Copy Transforms"])
                 print("ported add anim " + b)
                 #animation_correct(list, b)
                 ANON_OT_load_additive.filepath = folder
@@ -531,7 +556,13 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         Properties_bone.keyframe_insert(data_path = '["Run_Duration"]', frame = 0)
         Properties_bone["Run_Duration"] = 1.0
         Properties_bone.keyframe_insert(data_path = '["Run_Duration"]', frame = bpy.context.active_object.pose.bones["bip_pelvis"].constraints["a_runNE_PRIMARY"].frame_end)
-        setup_ikchain("bip_hand_L", "weapon_bone", "bip_hand_L.001")
+        for constraint in bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints:
+            name = constraint.name
+            if "mid_center" not in name:
+                bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints.remove(constraint=constraint)
+            else:
+                bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints.remove(constraint=constraint)
+                const_create(name, "radius_move", variables, prop_names, self.suffix_enum, only_ik = True)
         return {'FINISHED'}
     
 class BYANON_PT_anim_parent(bpy.types.Panel):
