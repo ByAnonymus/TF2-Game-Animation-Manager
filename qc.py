@@ -4,7 +4,13 @@ from .bonegenerator import *
 from .additive_animation_porter import *
 from bpy.props import StringProperty, IntProperty, EnumProperty
 from .driver_defs import *
-
+def setup_ikchain(end_bone, bone_name, ik_name):
+    bpy.context.active_object.pose.bones[end_bone].constraints.new('IK')
+    constraint = bpy.context.active_object.pose.bones[end_bone].constraints["IK"]
+    constraint.target = bpy.context.active_object
+    constraint.subtarget = bpy.context.active_object.pose.bones[ik_name]
+    constraint.use_rotation = True
+    constraint.chain_count = 3
 def const_create(anim_name, expression, variables, prop_names, suffix_enum):
     prop = anim_name.replace("_" + suffix_enum, "")
     Prop_holder = bpy.context.active_object.pose.bones["Prop_holder"]
