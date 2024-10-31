@@ -546,7 +546,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                     case 9:
                         const_create(b, "radius_move*movement(angle_move, 0, 90, False)", variables, prop_names, self.suffix_enum)
             print("added driver {b}")
-
+        Properties_bone["PRIMARY"] = 1.0
         bpy.context.active_object.animation_data.action = None
         bpy.ops.object.mode_set(mode='POSE')
         bpy.ops.pose.select_all(action='SELECT')
