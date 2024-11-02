@@ -8,8 +8,8 @@ def setup_ikchain(end_bone, bone_name, ik_name):
     bpy.ops.object.mode_set(mode='EDIT')
     cb = bpy.context.active_object.data.edit_bones.new(ik_name)
 
-    cb.head = bpy.context.active_object.data.edit_bones[end_bone].tail
-    cb.tail = bpy.context.active_object.data.edit_bones[end_bone].head
+    cb.head = bpy.context.active_object.data.edit_bones[end_bone].head
+    cb.tail = bpy.context.active_object.data.edit_bones[end_bone].tail
     cb.matrix = bpy.context.active_object.data.edit_bones[end_bone].matrix
     cb.parent = bpy.context.active_object.data.edit_bones[bone_name]
     bpy.ops.object.mode_set(mode='POSE')
@@ -39,15 +39,21 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
             eval = Prop_holder.driver_add("[\"" + prop + "\"]")
             d = eval.driver
             d.type = "SCRIPTED"
-            d.expression = expression
+            d.expression = "1- var/10"
             for i in variables:
                 if i in d.expression:
                     v = d.variables.new()
-                    v.name = i
+                    v.type = 'LOC_DIFF'
+                    v.name = "var"
                     t = v.targets[0]
                     t.id_type = 'OBJECT'
                     t.id = bpy.data.objects[bpy.context.active_object.name]
-                    t.data_path = "pose.bones[\"Properties\"][\"" + i + "\"]"
+                    t.bone_target = "AIM"
+                    t = v.targets[1]
+                    t.id_type = 'OBJECT'
+                    t.id = bpy.data.objects[bpy.context.active_object.name]
+                    t.bone_target = "AIM_"+prop.removepreffix("")
+                    
         for active_bone in bpy.context.active_object.pose.bones:
             if (active_bone.name not in ["Properties", "Movement", "rootTransform", "AIM", "Prop_holder", "bip_hand_L.001"]):
             
@@ -644,7 +650,7 @@ def register():
         bpy.utils.register_class(i)
     bpy.types.Scene.qc_file_path = StringProperty(
         name="TXT File Path",
-        default="C:/Program Files (x86)/Steam/steamapps/common/tf_misc_dir/root/models/player/Anims/Soldier/soldier_animations.qc"
+        default="C:/Program Files (x86)/Steam/steamapps/common/Team Fortress 2/tf_misc_dir/root/models/player/Anims/Soldier/soldier_animations.qc"
     )
 def unregister():
     for i in classes:
