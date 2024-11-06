@@ -513,7 +513,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         line_index = -1
         for i in buffer:
             line_index +=1
-            if ("$sequence \"run_") in i:
+            if ("$sequence \"run_") + self.suffix_enum + " {" in i:
                 list.append(i.removesuffix("\n"))
                 list.append(buffer[line_index + 1].removeprefix("	\"").removesuffix("\"\n"))
                 list.append(buffer[line_index + 2].removeprefix("	\"").removesuffix("\"\n"))
@@ -531,7 +531,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                 animation_correct(list, b)
         bpy.ops.import_scene.smd(filepath = folder + "/" + "stand_" + self.suffix_enum + ".smd", rotMode = 'QUATERNION')
         for b in list:
-            if list.index(b) != 0 and list.index(b) % 10 != 0 and self.suffix_enum in b:        
+            if list.index(b) != 0 and list.index(b) % 10 != 0:        
                 n = list.index(b) % 10
                 match n:
                     case 1:
