@@ -494,7 +494,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                     case 1:
                         const_create(b, "1-sqrt((-1-look_x)^2+(-1-look_y)^2)", variables, prop_names, self.suffix_enum)
                     case 2:
-                        const_create(b, "radius_look*movement(angle_look, 225, 315, False)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "1-sqrt((0-look_x)^2+(-1-look_y)^2)", variables, prop_names, self.suffix_enum)
                     case 3:
                         const_create(b, "radius_look*movement(angle_look, 270, 360, False)", variables, prop_names, self.suffix_enum)
                     case 4:
