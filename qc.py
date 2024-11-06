@@ -496,19 +496,19 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                     case 2:
                         const_create(b, "1-sqrt((0-look_x)^2+(-1-look_y)^2)", variables, prop_names, self.suffix_enum)
                     case 3:
-                        const_create(b, "radius_look*movement(angle_look, 270, 360, False)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "1-sqrt((1-look_x)^2+(-1-look_y)^2)", variables, prop_names, self.suffix_enum)
                     case 4:
-                        const_create(b, "radius_look*movement(angle_look, 135, 225, False)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "1-sqrt((-1-look_x)^2+(0-look_y)^2)", variables, prop_names, self.suffix_enum)
                     case 5:
-                        const_create(b, "1-radius_look", variables, prop_names, self.suffix_enum)
+                        const_create(b, "1-sqrt((0-look_x)^2+(0-look_y)^2)", variables, prop_names, self.suffix_enum)
                     case 6:
-                        const_create(b, "radius_look*movement(angle_look, 315, 45, True)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "1-sqrt((1-look_x)^2+(0-look_y)^2)", variables, prop_names, self.suffix_enum)
                     case 7:
-                        const_create(b, "radius_look*movement(angle_look, 90, 180, False)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "1-sqrt((-1-look_x)^2+(1-look_y)^2)", variables, prop_names, self.suffix_enum)
                     case 8:
-                        const_create(b, "radius_look*movement(angle_look, 45, 135, False)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "1-sqrt((0-look_x)^2+(1-look_y)^2)", variables, prop_names, self.suffix_enum)
                     case 9:
-                        const_create(b, "radius_look*movement(angle_look, 0, 90, False)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "1-sqrt((0-look_x)^2+(1-look_y)^2)", variables, prop_names, self.suffix_enum)
         list = []
         line_index = -1
         for i in buffer:
