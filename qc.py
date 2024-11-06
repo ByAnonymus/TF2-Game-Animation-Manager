@@ -535,23 +535,15 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                 n = list.index(b) % 10
                 match n:
                     case 1:
-                        const_create(b, "radius_move*movement(angle_move, 180, 270, False)", variables, prop_names, self.suffix_enum)
-                    case 2:
-                        const_create(b, "radius_move*movement(angle_move, 225, 315, False)", variables, prop_names, self.suffix_enum)
-                    case 3:
-                        const_create(b, "radius_move*movement(angle_move, 270, 360, False)", variables, prop_names, self.suffix_enum)
-                    case 4:
-                        const_create(b, "radius_move*movement(angle_move, 135, 225, False)", variables, prop_names, self.suffix_enum)
-                    case 5:
-                        const_create("stand_"+self.suffix_enum, "1-radius_move", variables, prop_names, self.suffix_enum)
-                    case 6:
-                        const_create(b, "radius_move*movement(angle_move, 315, 45, True)", variables, prop_names, self.suffix_enum)
-                    case 7:
-                        const_create(b, "radius_move*movement(angle_move, 90, 180, False)", variables, prop_names, self.suffix_enum)
-                    case 8:
-                        const_create(b, "radius_move*movement(angle_move, 45, 135, False)", variables, prop_names, self.suffix_enum)
-                    case 9:
-                        const_create(b, "radius_move*movement(angle_move, 0, 90, False)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "1-sqrt((-1-move_x)^2+(-1-move_y)^2)", variables, prop_names, self.suffix_enum)
+                    case 2:                        const_create(b, "1-sqrt((0-move_x)^2+(-1-move_y)^2)", variables, prop_names, self.suffix_enum)
+                    case 3:                        const_create(b, "1-sqrt((1-move_x)^2+(-1-move_y)^2)", variables, prop_names, self.suffix_enum)                    
+                    case 4:                        const_create(b, "1-sqrt((-1-move_x)^2+(0-move_y)^2)", variables, prop_names, self.suffix_enum)                    
+                    case 5:                        const_create("stand" + self.suffix_enum, "1-sqrt((0-move_x)^2+(0-move_y)^2)", variables, prop_names, self.suffix_enum)                    
+                    case 6:                        const_create(b, "1-sqrt((1-move_x)^2+(0-move_y)^2)", variables, prop_names, self.suffix_enum)                    
+                    case 7:                        const_create(b, "1-sqrt((-1-move_x)^2+(1-move_y)^2)", variables, prop_names, self.suffix_enum)                    
+                    case 8:                        const_create(b, "1-sqrt((0-move_x)^2+(1-move_y)^2)", variables, prop_names, self.suffix_enum)                   
+                    case 9:                        const_create(b, "1-sqrt((0-move_x)^2+(1-move_y)^2)", variables, prop_names, self.suffix_enum)
             print("added driver {b}")
         bpy.data.actions.new("IK_" + self.suffix_enum)
         bpy.context.active_object.animation_data.action = bpy.data.actions["IK_" + self.suffix_enum]
