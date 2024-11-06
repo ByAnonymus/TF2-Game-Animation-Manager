@@ -39,20 +39,15 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
             eval = Prop_holder.driver_add("[\"" + prop + "\"]")
             d = eval.driver
             d.type = "SCRIPTED"
-            d.expression = "1- var/10"
+            d.expression = expression
             for i in variables:
                 if i in d.expression:
                     v = d.variables.new()
-                    v.type = 'LOC_DIFF'
-                    v.name = "var"
+                    v.name = i
                     t = v.targets[0]
                     t.id_type = 'OBJECT'
                     t.id = bpy.data.objects[bpy.context.active_object.name]
-                    t.bone_target = "AIM"
-                    t = v.targets[1]
-                    t.id_type = 'OBJECT'
-                    t.id = bpy.data.objects[bpy.context.active_object.name]
-                    t.bone_target = "AIM_"+prop.removepreffix("")
+                    t.data_path = "pose.bones[\"Properties\"][\"" + i +"\"]"
                     
         for active_bone in bpy.context.active_object.pose.bones:
             if (active_bone.name not in ["Properties", "Movement", "rootTransform", "AIM", "Prop_holder", "bip_hand_L.001"]):
@@ -497,7 +492,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                 n = list.index(b) % 10
                 match n:
                     case 1:
-                        const_create(b, "radius_look*movement(angle_look, 180, 270, False)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "1-sqrt((-1-look_x)^2+(-1-look_y)^2)", variables, prop_names, self.suffix_enum)
                     case 2:
                         const_create(b, "radius_look*movement(angle_look, 225, 315, False)", variables, prop_names, self.suffix_enum)
                     case 3:
