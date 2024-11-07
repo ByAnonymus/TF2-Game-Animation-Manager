@@ -513,7 +513,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         line_index = -1
         for i in buffer:
             line_index +=1
-            if ("$sequence \"run_") + self.suffix_enum + " {" in i:
+            if ("$sequence \"run_") + self.suffix_enum + "\" {" in i:
                 list.append(i.removesuffix("\n"))
                 list.append(buffer[line_index + 1].removeprefix("	\"").removesuffix("\"\n"))
                 list.append(buffer[line_index + 2].removeprefix("	\"").removesuffix("\"\n"))
