@@ -508,7 +508,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                     case 8:
                         const_create(b, "1-sqrt((0-look_x)**2+(1-look_y)**2)", variables, prop_names, self.suffix_enum)
                     case 9:
-                        const_create(b, "1-sqrt((0-look_x)**2+(1-look_y)**2)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "1-sqrt((1-look_x)**2+(1-look_y)**2)", variables, prop_names, self.suffix_enum)
         list = []
         line_index = -1
         for i in buffer:
@@ -543,7 +543,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                     case 6:                        const_create(b, "1-sqrt((1-move_x)**2+(0-move_y)**2)", variables, prop_names, self.suffix_enum)                    
                     case 7:                        const_create(b, "1-sqrt((-1-move_x)**2+(1-move_y)**2)", variables, prop_names, self.suffix_enum)                    
                     case 8:                        const_create(b, "1-sqrt((0-move_x)**2+(1-move_y)**2)", variables, prop_names, self.suffix_enum)                   
-                    case 9:                        const_create(b, "1-sqrt((0-move_x)**2+(1-move_y)**2)", variables, prop_names, self.suffix_enum)
+                    case 9:                        const_create(b, "1-sqrt((1-move_x)**2+(1-move_y)**2)", variables, prop_names, self.suffix_enum)
             print("added driver {b}")
         bpy.data.actions.new("IK_" + self.suffix_enum)
         bpy.context.active_object.animation_data.action = bpy.data.actions["IK_" + self.suffix_enum]
