@@ -432,7 +432,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         file.close()
         bpy.ops.object.mode_set(mode='POSE')
         prop_names = ["move_x", "move_y", "radius_move", "angle_move", "look_x", "look_y","radius_look", "angle_look", "Crouch", "Stand_Duration", "Crouch_Duration","Run_Duration"]
-        variables = ["radius_move", "angle_move","radius_look", "angle_look", "Crouch"]
+        variables = ["move_x", "move_y", "radius_move", "angle_move", "look_x", "look_y","radius_look", "angle_look", "Crouch"]
         import_options =[]
         if bpy.context.active_object.pose.bones["bip_hand_L"].constraints.get("IK") == None:
             setup_ikchain("bip_hand_L", "weapon_bone", "bip_hand_L.001")
