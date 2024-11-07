@@ -235,7 +235,7 @@ def animation_correct(list, b):
     active_bone.constraints["Copy Location"].target = bpy.data.objects["Empty"]
 
 
-    bpy.ops.nla.bake(frame_start=0, frame_end=int(bpy.data.actions[active_bone.id_data.animation_data.action.name].frame_range[1]), visual_keying=True, clear_constraints=False, use_current_action=True, bake_types={'POSE'}, channel_types={'LOCATION', 'ROTATION', 'SCALE', 'BBONE', 'PROPS'})
+    bpy.ops.nla.bake(frame_start=0, frame_end=int(bpy.data.actions[active_bone.id_data.animation_data.action.name].frame_range[1]), visual_keying=True, clear_constraints=False, use_current_action=True, bake_types={'POSE'})
     active_bone.constraints.remove(active_bone.constraints["Copy Location"])
     bpy.data.actions.remove(bpy.data.objects["Empty"].animation_data.action)
     bpy.data.objects.remove(bpy.data.objects["Empty"])
