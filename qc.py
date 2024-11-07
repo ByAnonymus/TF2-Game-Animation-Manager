@@ -539,7 +539,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                     case 2:                        const_create(b, "1-sqrt((0-move_x)^2+(-1-move_y)^2)", variables, prop_names, self.suffix_enum)
                     case 3:                        const_create(b, "1-sqrt((1-move_x)^2+(-1-move_y)^2)", variables, prop_names, self.suffix_enum)                    
                     case 4:                        const_create(b, "1-sqrt((-1-move_x)^2+(0-move_y)^2)", variables, prop_names, self.suffix_enum)                    
-                    case 5:                        const_create("stand" + self.suffix_enum, "1-sqrt((0-move_x)^2+(0-move_y)^2)", variables, prop_names, self.suffix_enum)                    
+                    case 5:                        const_create("stand_" + self.suffix_enum, "1-sqrt((0-move_x)^2+(0-move_y)^2)", variables, prop_names, self.suffix_enum)                    
                     case 6:                        const_create(b, "1-sqrt((1-move_x)^2+(0-move_y)^2)", variables, prop_names, self.suffix_enum)                    
                     case 7:                        const_create(b, "1-sqrt((-1-move_x)^2+(1-move_y)^2)", variables, prop_names, self.suffix_enum)                    
                     case 8:                        const_create(b, "1-sqrt((0-move_x)^2+(1-move_y)^2)", variables, prop_names, self.suffix_enum)                   
