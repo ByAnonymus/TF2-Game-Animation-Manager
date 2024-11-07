@@ -637,7 +637,8 @@ def register():
         bpy.utils.register_class(i)
     bpy.types.Scene.qc_file_path = StringProperty(
         name="TXT File Path",
-        default="C:/Program Files (x86)/Steam/steamapps/common/Team Fortress 2/tf_misc_dir/root/models/player/Anims/Soldier/soldier_animations.qc"
+        #default="C:/Program Files (x86)/Steam/steamapps/common/Team Fortress 2/tf_misc_dir/root/models/player/Anims/Soldier/soldier_animations.qc"
+        default="/data/data/com.termux/files/home/storage/shared/BLENDER ANIMATIONS DECOMPLIE/SOLDIER/Demo_Animations//soldier_animations.qc"
     )
 def unregister():
     for i in classes:
