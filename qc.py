@@ -98,6 +98,7 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                 else:
                     constraint.driver_remove("eval_time")
                     eval = constraint.driver_add("eval_time")
+                    Prop_holder.driver_remove("[\"" + prop + "\"]")
                     constraint.influence =1
                 d = eval.driver
                 d.type = "SCRIPTED"
