@@ -93,11 +93,16 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                     Properties_bone.keyframe_insert(data_path = '["CrouchWalk_Duration"]', frame = constraint.frame_end)
                 if "run" in constraint.name:
                     t.data_path = "pose.bones[\"Properties\"][\"Run_Duration\"]"
-
-                eval = constraint.driver_add("influence")
+                if should_use_eval == None:
+                    eval = constraint.driver_add("influence")
+                else:
+                    constraint.driver_remove("eval_time")
+                    eval = constraint.driver_add("eval_time")
+                    constraint.influence =1
                 d = eval.driver
                 d.type = "SCRIPTED"
                 d.expression = prop
+
                 for i in variables:
                     if i in constraint.name:
                         v = d.variables.new()
@@ -120,7 +125,7 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                 t.id = bpy.data.objects[bpy.context.active_object.name]
                 t.data_path = "pose.bones[\"Properties\"][\"" + suffix_enum + "\"]"
                 print("added constraint to " + active_bone.name+" for "+constraint.name)
-    elif only_ik_bone == True:
+    else:
         bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints.new('ACTION')
         bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints["Action"].name = anim_name
         constraint = bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints[anim_name]
@@ -149,7 +154,7 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
             t.id = bpy.data.objects[bpy.context.active_object.name]
             t.data_path = "pose.bones[\"Properties\"][\"" + suffix_enum + "\"]"
             d.expression = d.expression + " if " + expression + " == 0 else " + suffix_enum
-    if should_use_eval == True:
+    '''elif should_use_eval == True:
         constraint.driver_remove("influence")
         constraint.driver_remove("eval_time")
         constraint.influence = 1
@@ -170,7 +175,7 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
         t.id_type = 'OBJECT'                
         t.id = bpy.data.objects[bpy.context.active_object.name]  
         t.data_path = "pose.bones[\"Properties\"][\"" + suffix_enum + "\"]"
-
+'''
 class BYANON_OT_anim_optimize(bpy.types.Operator):
     bl_idname = 'byanon.optimize'
     bl_label = 'Optimize'
