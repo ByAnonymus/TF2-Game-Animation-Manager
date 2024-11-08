@@ -159,6 +159,17 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
         d.expression = expression
         v = d.variables.new()
         v.name = prop
+        t = v.targets[0]                
+        t.id_type = 'OBJECT'                
+        t.id = bpy.data.objects[bpy.context.active_object.name]        
+        t.data_path = "pose.bones[\"Prop_holder\"][\"" + prop + "\"]"
+        d.expression = "(" + d.expression + ")*" + suffix_enum    
+        v = d.variables.new()                
+        v.name = suffix_enum                
+        t = v.targets[0]                
+        t.id_type = 'OBJECT'                
+        t.id = bpy.data.objects[bpy.context.active_object.name]  
+        t.data_path = "pose.bones[\"Properties\"][\"" + suffix_enum + "\"]"
 
 class BYANON_OT_anim_optimize(bpy.types.Operator):
     bl_idname = 'byanon.optimize'
@@ -530,7 +541,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                 ANON_OT_load_additive.execute(ANON_OT_load_additive, context)                                
                 print("ported add anim " + b)                #animation_correct(list, b)                                
                 ANON_OT_load_additive.filepath = folder                
-                const_create(b, "Crouch",variables,prop_names, self.suffix_enum)        
+                const_create(b, "Crouch",variables,prop_names, self.suffix_enum, eval_driver=True)        
         list = []
         line_index = -1
         for i in buffer:
