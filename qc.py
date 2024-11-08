@@ -120,7 +120,7 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                 t.id = bpy.data.objects[bpy.context.active_object.name]
                 t.data_path = "pose.bones[\"Properties\"][\"" + suffix_enum + "\"]"
                 print("added constraint to " + active_bone.name+" for "+constraint.name)
-    else:
+    elif only_ik_bone == True:
         bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints.new('ACTION')
         bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints["Action"].name = anim_name
         constraint = bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints[anim_name]
@@ -149,7 +149,7 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
             t.id = bpy.data.objects[bpy.context.active_object.name]
             t.data_path = "pose.bones[\"Properties\"][\"" + suffix_enum + "\"]"
             d.expression = d.expression + " if " + expression + " == 0 else " + suffix_enum
-    if should_use_eval == True:
+    elif should_use_eval == True:
         constraint.driver_remove("influence")
         constraint.driver_remove("eval_time")
         constraint.influence = 1
