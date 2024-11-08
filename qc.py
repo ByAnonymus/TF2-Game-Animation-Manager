@@ -524,7 +524,14 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                 list.append(buffer[line_index + 7].removeprefix("	\"").removesuffix("\"\n"))
                 list.append(buffer[line_index + 8].removeprefix("	\"").removesuffix("\"\n"))
                 list.append(buffer[line_index + 9].removeprefix("	\"").removesuffix("\"\n"))
-
+        for i in buffer:
+            if "\"gesture_"+self.suffix_enum+"_" in i:
+                ANON_OT_load_additive.filepath = folder + "/" + b + ".smd"                
+                create_action(b)                
+                ANON_OT_load_additive.execute(ANON_OT_load_additive, context)                
+                print("ported add anim " + b)                #animation_correct(list, b)                
+                ANON_OT_load_additive.filepath = folder
+                const_create(i.removesuffix("\" {").removeprefix("$sequence \""), "",variables,prop_names, self.suffix_enum)
         for b in list:
             if list.index(b) != 0 and list.index(b) % 10 != 0 and self.suffix_enum in b:
                 bpy.ops.import_scene.smd(filepath = folder + "/" + b + ".smd", rotMode = 'QUATERNION')
