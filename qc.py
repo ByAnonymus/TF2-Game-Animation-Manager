@@ -242,7 +242,7 @@ class BYANON_OT_anim_base(bpy.types.Operator):
         prop_names = ["move_x", "move_y", "radius_move", "angle_move", "look_x", "look_y","radius_look", "angle_look", "Crouch", "Stand_Duration", "Crouch_Duration","Run_Duration"]
         variables = ["radius_move", "angle_move","radius_look", "angle_look", "Crouch"]
         Properties_bone = bpy.context.active_object.pose.bones['Properties']
-        bpy.context.active_bone.id_data.bones['Prop_holder'].hide = True
+        bpy.context.active_bone.id_data.bones['Prop_holder'].hide = False
         
         for i in prop_names:
             Properties_bone[i] = float(0)
