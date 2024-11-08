@@ -511,7 +511,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                         const_create(b, "1-sqrt((1-look_x)**2+(1-look_y)**2)", variables, prop_names, self.suffix_enum)
         for b in buffer:            
             print(b)            
-            if "\"gesture_"+self.suffix_enum+"_" in b:                
+            if "\"gesture_"+self.suffix_enum.lower()+"_" in b:                
                 b =b.removesuffix("\" {\n").removeprefix("$sequence \"")                
                 print(b)                
                 ANON_OT_load_additive.filepath = folder + "/" + b + ".smd"                                
