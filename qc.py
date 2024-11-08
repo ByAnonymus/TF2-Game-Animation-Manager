@@ -149,7 +149,7 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
             t.id = bpy.data.objects[bpy.context.active_object.name]
             t.data_path = "pose.bones[\"Properties\"][\"" + suffix_enum + "\"]"
             d.expression = d.expression + " if " + expression + " == 0 else " + suffix_enum
-    elif should_use_eval == True:
+    if should_use_eval == True:
         constraint.driver_remove("influence")
         constraint.driver_remove("eval_time")
         constraint.influence = 1
