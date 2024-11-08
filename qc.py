@@ -509,6 +509,17 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                         const_create(b, "1-sqrt((0-look_x)**2+(1-look_y)**2)", variables, prop_names, self.suffix_enum)
                     case 9:
                         const_create(b, "1-sqrt((1-look_x)**2+(1-look_y)**2)", variables, prop_names, self.suffix_enum)
+        for b in buffer:            
+            print(b)            
+            if "\"gesture_"+self.suffix_enum+"_" in b:                
+                b =b.removesuffix("\" {\n").removeprefix("$sequence \"")                
+                print(b)                
+                ANON_OT_load_additive.filepath = folder + "/" + b + ".smd"                                
+                create_action(b)                                
+                ANON_OT_load_additive.execute(ANON_OT_load_additive, context)                                
+                print("ported add anim " + b)                #animation_correct(list, b)                                
+                ANON_OT_load_additive.filepath = folder                
+                const_create(b, "Crouch",variables,prop_names, self.suffix_enum)        
         list = []
         line_index = -1
         for i in buffer:
@@ -524,17 +535,6 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                 list.append(buffer[line_index + 7].removeprefix("	\"").removesuffix("\"\n"))
                 list.append(buffer[line_index + 8].removeprefix("	\"").removesuffix("\"\n"))
                 list.append(buffer[line_index + 9].removeprefix("	\"").removesuffix("\"\n"))
-        for b in buffer:
-            print(b)
-            if "\"gesture_"+self.suffix_enum+"_" in b:
-                b =b.removesuffix("\" {\n").removeprefix("$sequence \"")
-                print(b)
-                ANON_OT_load_additive.filepath = folder + "/" + b + ".smd"                
-                create_action(b)                
-                ANON_OT_load_additive.execute(ANON_OT_load_additive, context)                
-                print("ported add anim " + b)                #animation_correct(list, b)                
-                ANON_OT_load_additive.filepath = folder
-                const_create(b, "Crouch",variables,prop_names, self.suffix_enum)
         for b in list:
             if list.index(b) != 0 and list.index(b) % 10 != 0 and self.suffix_enum in b:
                 bpy.ops.import_scene.smd(filepath = folder + "/" + b + ".smd", rotMode = 'QUATERNION')
