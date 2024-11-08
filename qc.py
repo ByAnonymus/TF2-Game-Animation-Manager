@@ -526,7 +526,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                 list.append(buffer[line_index + 9].removeprefix("	\"").removesuffix("\"\n"))
         for b in buffer:
             if "\"gesture_"+self.suffix_enum+"_" in b:
-                b =b.removesuffix("\" {").removeprefix("$sequence \"")
+                b =b.removesuffix("\" {\n").removeprefix("$sequence \"")
                 ANON_OT_load_additive.filepath = folder + "/" + b + ".smd"                
                 create_action(b)                
                 ANON_OT_load_additive.execute(ANON_OT_load_additive, context)                
