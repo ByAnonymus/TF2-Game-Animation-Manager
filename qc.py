@@ -31,6 +31,7 @@ def setup_ikchain(end_bone, bone_name, ik_name):
     t.data_path = "pose.bones[\"Properties\"][\"radius_look\"]"
 def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kwargs):
     only_ik_bone = kwargs.get('only_ik', None)
+    should_use_eval = kwargs.get('eval_driver', None)
     prop = anim_name.replace("_" + suffix_enum, "")
     Prop_holder = bpy.context.active_object.pose.bones["Prop_holder"]
     if only_ik_bone == None:
@@ -148,6 +149,16 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
             t.id = bpy.data.objects[bpy.context.active_object.name]
             t.data_path = "pose.bones[\"Properties\"][\"" + suffix_enum + "\"]"
             d.expression = d.expression + " if " + expression + " == 0 else " + suffix_enum
+    if should_use_eval == True:
+        constraint.driver_remove("influence")
+        constraint.driver_remove("eval_time")
+        constraint.influence = 1
+        eval = constraint.driver_add("eval_time")
+        d = eval.driver
+        d.type = "SCRIPTED"
+        d.expression = expression
+        v = d.variables.new()
+        v.name = prop
 
 class BYANON_OT_anim_optimize(bpy.types.Operator):
     bl_idname = 'byanon.optimize'
