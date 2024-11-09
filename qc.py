@@ -547,8 +547,8 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                         break
                 for i in range(b1, b2):
                     if "delta" in buffer[i]:
-                        b =b.removesuffix("\" {\n").removeprefix("$sequence \"")                
-                        print(b)                
+                        b =b.removesuffix("\" {\n").removeprefix("$sequence \"").removesuffix("/")                
+                        print(b)     
                         ANON_OT_load_additive.filepath = folder + "/" + b + ".smd"                                
                         create_action(b)                                
                         ANON_OT_load_additive.execute(ANON_OT_load_additive, context)                                
