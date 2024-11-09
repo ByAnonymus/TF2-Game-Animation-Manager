@@ -99,7 +99,10 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                     constraint.driver_remove("eval_time")
                     eval = constraint.driver_add("eval_time")
                     Prop_holder.driver_remove("[\"" + prop + "\"]")
-                    constraint.influence =1
+                    d = constraint.driver_add("influence").driver
+                    d.type="SCRIPTED"
+                    d.use_self = True
+                    d.expression = "1 if self.eval_time > 0 else 0"
                 d = eval.driver
                 d.type = "SCRIPTED"
                 d.expression = prop
@@ -547,7 +550,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                         const_create(b, "1-sqrt((1-look_x)**2+(1-look_y)**2)", variables, prop_names, self.suffix_enum)
         for b in buffer:            
             print(b)            
-            if (self.suffix_enum.lower()+"_" in b.lower() or self.suffix_enum.lower()+"\"" in b.lower() ) and "@" not in b and "layer" not in b and "$sequence" in b and "aim" not in b :
+            if (self.suffix_enum.lower()+"_" in b.lower() or self.suffix_enum.lower()+"\"" in b.lower() ) and "@" not in b and "layer" not in b and "$sequence" in b and "aim" not in b and "swim" not in b.lower() and "crouch" not in b.lower():
                 b1 = buffer.index(b)         
                 for i in range(b1, len(buffer)+1):
                     if buffer[i] == "}\n":
