@@ -32,7 +32,7 @@ def setup_ikchain(end_bone, bone_name, ik_name):
 def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kwargs):
     only_ik_bone = kwargs.get('only_ik', None)
     should_use_eval = kwargs.get('eval_driver', None)
-    prop = anim_name.replace("_" + suffix_enum, "")
+    prop = anim_name.lower().replace("_" + suffix_enum.lower(), "")
     Prop_holder = bpy.context.active_object.pose.bones["Prop_holder"]
     if only_ik_bone == None:
         if bool(Prop_holder.get(prop)) == False:
@@ -539,15 +539,23 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                         const_create(b, "1-sqrt((1-look_x)**2+(1-look_y)**2)", variables, prop_names, self.suffix_enum)
         for b in buffer:            
             print(b)            
-            if "\"gesture_"+self.suffix_enum.lower()+"_" in b:                
-                b =b.removesuffix("\" {\n").removeprefix("$sequence \"")                
-                print(b)                
-                ANON_OT_load_additive.filepath = folder + "/" + b + ".smd"                                
-                create_action(b)                                
-                ANON_OT_load_additive.execute(ANON_OT_load_additive, context)                                
-                print("ported add anim " + b)                #animation_correct(list, b)                                
-                ANON_OT_load_additive.filepath = folder                
-                const_create(b, "Crouch",variables,prop_names, self.suffix_enum, eval_driver=True)        
+            if self.suffix_enum.lower()+"_" in b or self.suffix_enum.lower()+"\"" in b and "@" not in b and "layer" not in b:
+                b1 = buffer.index(b)         
+                for i in range(b1, buffer.count()+1):
+                    if buffer[i] == "}\n":
+                        b2 = i
+                        break
+                for i in range(b1, b2):
+                    if "delta" in buffer[i]:
+                        b =b.removesuffix("\" {\n").removeprefix("$sequence \"")                
+                        print(b)                
+                        ANON_OT_load_additive.filepath = folder + "/" + b + ".smd"                                
+                        create_action(b)                                
+                        ANON_OT_load_additive.execute(ANON_OT_load_additive, context)                                
+                        print("ported add anim " + b)                #animation_correct(list, b)                                
+                        ANON_OT_load_additive.filepath = folder                
+                        const_create(b, "Crouch",variables,prop_names, self.suffix_enum, eval_driver=True)
+                        break        
         list = []
         line_index = -1
         for i in buffer:
