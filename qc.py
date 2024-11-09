@@ -539,7 +539,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                         const_create(b, "1-sqrt((1-look_x)**2+(1-look_y)**2)", variables, prop_names, self.suffix_enum)
         for b in buffer:            
             print(b)            
-            if self.suffix_enum.lower()+"_" in b or self.suffix_enum.lower()+"\"" in b and "@" not in b and "layer" not in b and "$sequence" in b:
+            if (self.suffix_enum.lower()+"_" in b or self.suffix_enum.lower()+"\"" in b) and "@" not in b and "layer" not in b and "$sequence" in b:
                 b1 = buffer.index(b)         
                 for i in range(b1, len(buffer)+1):
                     if buffer[i] == "}\n":
