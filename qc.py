@@ -541,7 +541,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
             print(b)            
             if self.suffix_enum.lower()+"_" in b or self.suffix_enum.lower()+"\"" in b and "@" not in b and "layer" not in b:
                 b1 = buffer.index(b)         
-                for i in range(b1, buffer.count()+1):
+                for i in range(b1, buffer.len()+1):
                     if buffer[i] == "}\n":
                         b2 = i
                         break
