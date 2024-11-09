@@ -119,12 +119,20 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                 t.id = bpy.data.objects[bpy.context.active_object.name]
                 t.data_path = "pose.bones[\"Prop_holder\"][\"" + prop + "\"]"
                 d.expression = "(" + d.expression + ")*" + suffix_enum
+                if "crouch" in constraint.name.lower():
+                    d.expression = "(" + d.expression + ")*Crouch"
                 v = d.variables.new()
                 v.name = suffix_enum
                 t = v.targets[0]
                 t.id_type = 'OBJECT'
                 t.id = bpy.data.objects[bpy.context.active_object.name]
                 t.data_path = "pose.bones[\"Properties\"][\"" + suffix_enum + "\"]"
+                v = d.variables.new()
+                v.name = "Crouch"
+                t = v.targets[0]
+                t.id_type = 'OBJECT'
+                t.id = bpy.data.objects[bpy.context.active_object.name]
+                t.data_path = "pose.bones[\"Properties\"][\"Crouch\"]"
                 print("added constraint to " + active_bone.name+" for "+constraint.name)
     else:
         bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints.new('ACTION')
@@ -683,8 +691,8 @@ def register():
         bpy.utils.register_class(i)
     bpy.types.Scene.qc_file_path = StringProperty(
         name="TXT File Path",
-        #default="C:/Program Files (x86)/Steam/steamapps/common/Team Fortress 2/tf_misc_dir/root/models/player/Anims/Soldier/soldier_animations.qc"
-        default="/data/data/com.termux/files/home/storage/shared/BLENDER ANIMATIONS DECOMPLIE/SOLDIER/Demo_Animations//soldier_animations.qc"
+        default="C:/Program Files (x86)/Steam/steamapps/common/Team Fortress 2/tf_misc_dir/root/models/player/Anims/Soldier/soldier_animations.qc"
+        #default="/data/data/com.termux/files/home/storage/shared/BLENDER ANIMATIONS DECOMPLIE/SOLDIER/Demo_Animations//soldier_animations.qc"
     )
 def unregister():
     for i in classes:
