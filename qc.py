@@ -80,7 +80,9 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                         t.data_path = "pose.bones[\"Prop_holder\"][\"" + prop + "\"]"
                     constraint.subtarget= prop
                     constraint.target_space = 'LOCAL'
-                    constraint.max = constraint
+                    constraint.max = constraint.frame_end
+                    property_manager = Prop_holder.id_properties_ui(prop)
+                    property_manager.update(min=constraint.min, max=constraint.max, soft_min=constraint.min, soft_max=constraint.max, step=1)
                 Properties_bone = bpy.context.active_object.pose.bones['Properties']
                 '''eval = constraint.driver_add("eval_time")
                 d = eval.driver
@@ -706,10 +708,105 @@ class BYANON_PT_anim_manager(bpy.types.Panel):
         self.layout.label(text='MANAGER')
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
-        layout.operator('byanon.anim_scan')
+        layout.operator("object.update_custom_props", text="Refresh Custom Properties")
+        
+        # Display the custom properties in a UI list
+        layout.template_list("BYANON_UL_CustomPropsList", "", context.scene, "custom_props_collection", context.scene, "custom_props_collection_index")
+'''class BYANON_UL_custom_prop_nodriver(bpy.types.UIList):
 
-classes = [BYANON_PT_anim_parent, BYANON_OT_anim_port, BYANON_OT_anim_optimize, BYANON_OT_anim_unoptimize, BYANON_OT_anim_scan, BYANON_OT_anim_base, BYANON_PT_anim_porter, BYANON_PT_anim_manager, ]
+    def filter_items(self, context, data, propname):
+        #props = context.scene.hisanimvars
+        items = getattr(data, propname)
+        filtered = [self.bitflag_filter_item] * len(items)
+        for i, item in enumerate(items):
+            if self.filter_name.lower() not in item.name.lower():
+                filtered[i] &= ~self.bitflag_filter_item
+            
+            find = f'pose.bones["Prop_holder"]["{item.name}"].value'
+            if context.object.animation_data.drivers.find(find) != None:
+                filtered[i] &= ~self.bitflag_filter_item
+
+        return filtered, []
+    
+    def draw_item(self, _context, layout, _data, item, icon, active_data, _active_propname, index):
+        obj = active_data
+        key_block = item
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            row = layout.row()
+            row.label(text='', icon='SHAPEKEY_DATA')
+            if not item.id_data.use_relative:
+                row.prop(key_block, "frame", text="")
+            elif index > 0:
+                row.prop(key_block, "value", text=item.name, emboss=True, slider=True)
+                row.prop_decorator(item, "value")
+            else:
+                row.label(text="")
+            row.prop(key_block, "mute", text="", emboss=False)
+        elif self.layout_type == 'GRID':
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon_value=icon)'''
+
+import bpy
+
+# Operator to update custom properties list
+class BYANON_OT_UpdateCustomProps(bpy.types.Operator):
+    bl_idname = "object.update_custom_props"
+    bl_label = "Update Custom Properties"
+
+    def execute(self, context):
+        obj = context.object
+        bone_name = "Prop_holder"
+
+        if obj and obj.type == 'ARMATURE' and bone_name in obj.pose.bones:
+            # Clear any existing property UI items
+            context.scene.custom_props_collection.clear()
+
+            bone = obj.pose.bones[bone_name]
+            for key in bone.keys():
+                if not key.startswith("_"):  # Skip internal properties
+                    item = context.scene.custom_props_collection.add()
+                    item.name = key
+                    item.value = key  # Store the property key instead of its value
+
+        return {'FINISHED'}
+
+# Define a UI List to display custom properties
+class BYANON_UL_CustomPropsList(bpy.types.UIList):
+    def filter_items(self, context, data, propname):
+        #props = context.scene.hisanimvars
+        items = getattr(data, propname)
+        filtered = [self.bitflag_filter_item] * len(items)
+        for i, item in enumerate(items):
+            if self.filter_name.lower() not in item.name.lower():
+                filtered[i] &= ~self.bitflag_filter_item
+            
+            find = f'pose.bones["Prop_holder"]["{item.name}"]'
+            if context.object.animation_data.drivers.find(find) != None:
+                filtered[i] &= ~self.bitflag_filter_item
+
+        return filtered, []
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        obj = context.object
+        bone_name = "Prop_holder"
+
+        if obj and obj.type == 'ARMATURE' and bone_name in obj.pose.bones:
+            bone = obj.pose.bones[bone_name]
+
+            # Retrieve the actual custom property value by its name
+            if item.name in bone.keys():
+                row = layout.row()
+                
+                # Directly display the property as a slider
+                row.prop(bone, f'["{item.name}"]', text=item.name, slider=True)
+
+# Custom property item for UI list display
+class CustomPropertyItem(bpy.types.PropertyGroup):
+    name: bpy.props.StringProperty()
+    value: bpy.props.StringProperty()
+
+classes = [BYANON_PT_anim_parent, BYANON_OT_anim_port, BYANON_OT_anim_optimize, BYANON_OT_anim_unoptimize, BYANON_OT_anim_scan, BYANON_OT_anim_base, BYANON_PT_anim_porter, BYANON_PT_anim_manager, CustomPropertyItem,
+    BYANON_OT_UpdateCustomProps,
+    BYANON_UL_CustomPropsList,]
 def register():
     for i in classes:
         bpy.utils.register_class(i)
@@ -718,8 +815,11 @@ def register():
         default="C:/Program Files (x86)/Steam/steamapps/common/tf_misc_dir/root/models/player/Anims/PYRO/pyro_animations.qc"
         #default="/data/data/com.termux/files/home/storage/shared/BLENDER ANIMATIONS DECOMPLIE/SOLDIER/Demo_Animations//soldier_animations.qc"
     )
+    bpy.types.Scene.custom_props_collection = bpy.props.CollectionProperty(type=CustomPropertyItem)
+    bpy.types.Scene.custom_props_collection_index = bpy.props.IntProperty()
 def unregister():
     for i in classes:
         bpy.utils.unregister_class(i)
     del bpy.types.Scene.qc_file_path
     del bpy.types.Scene.anim_folder_path
+bpy.types.PoseBone
