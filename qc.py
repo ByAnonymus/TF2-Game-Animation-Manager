@@ -56,12 +56,33 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                 bpy.context.active_object.pose.bones[active_bone.name].constraints.new('ACTION')
                 bpy.context.active_object.pose.bones[active_bone.name].constraints["Action"].name = anim_name
                 constraint = bpy.context.active_object.pose.bones[active_bone.name].constraints[anim_name]
-                constraint.use_eval_time = True
+                
                 constraint.action = bpy.data.actions[anim_name]
                 constraint.frame_end = int(bpy.data.actions[anim_name].frame_range[1])
-
+                if constraint.frame_end == 0:
+                    constraint.use_eval_time = True
+                else:
+                    constraint.target = active_bone.id_data
+                    if bool(bpy.context.active_object.pose.bones.get(prop)) == False:
+                        bpy.ops.object.mode_set(mode='EDIT')
+                        bpy.ops.armature.bone_primitive_add(name=prop)
+                        bpy.ops.object.mode_set(mode='POSE')
+                        subtarget_bone = bpy.context.active_object.pose.bones[prop]
+                        eval =subtarget_bone.driver_add("location", 0)
+                        d = eval.driver
+                        d.type = "SCRIPTED"
+                        d.expression = prop
+                        v = d.variables.new()
+                        v.name = prop
+                        t = v.targets[0]
+                        t.id_type = 'OBJECT'
+                        t.id = bpy.data.objects[bpy.context.active_object.name]
+                        t.data_path = "pose.bones[\"Prop_holder\"][\"" + prop + "\"]"
+                    constraint.subtarget= prop
+                    constraint.target_space = 'LOCAL'
+                    constraint.max = constraint
                 Properties_bone = bpy.context.active_object.pose.bones['Properties']
-                eval = constraint.driver_add("eval_time")
+                '''eval = constraint.driver_add("eval_time")
                 d = eval.driver
                 d.type = "SCRIPTED"
                 d.expression = "Duration"
@@ -72,11 +93,11 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                 t.id = bpy.data.objects[bpy.context.active_object.name]
                 if "stand" in constraint.name:
                     t.data_path = "pose.bones[\"Properties\"][\"Stand_Duration\"]"
-                    '''Properties_bone["Stand_Duration"] = 0.0
+                    Properties_bone["Stand_Duration"] = 0.0
                     Properties_bone.keyframe_insert(data_path = '["Stand_Duration"]', frame = 0)
                     #print("done")
                     Properties_bone["Stand_Duration"] = 1.0
-                    Properties_bone.keyframe_insert(data_path = '["Stand_Duration"]', frame = constraint.frame_end)'''
+                    Properties_bone.keyframe_insert(data_path = '["Stand_Duration"]', frame = constraint.frame_end)
                 elif "Crouch" in constraint.name:
                     t.data_path = "pose.bones[\"Properties\"][\"Crouch_Duration\"]"
                     Properties_bone["Crouch_Duration"] = 0.0
@@ -92,7 +113,7 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                     Properties_bone["CrouchWalk_Duration"] = 1.0
                     Properties_bone.keyframe_insert(data_path = '["CrouchWalk_Duration"]', frame = constraint.frame_end)
                 if "run" in constraint.name:
-                    t.data_path = "pose.bones[\"Properties\"][\"Run_Duration\"]"
+                    t.data_path = "pose.bones[\"Properties\"][\"Run_Duration\"]"'''
                 if should_use_eval == None:
                     eval = constraint.driver_add("influence")
                 else:
@@ -694,7 +715,7 @@ def register():
         bpy.utils.register_class(i)
     bpy.types.Scene.qc_file_path = StringProperty(
         name="TXT File Path",
-        default="C:/Program Files (x86)/Steam/steamapps/common/Team Fortress 2/tf_misc_dir/root/models/player/Anims/Soldier/soldier_animations.qc"
+        default="C:/Program Files (x86)/Steam/steamapps/common/tf_misc_dir/root/models/player/Anims/PYRO/pyro_animations.qc"
         #default="/data/data/com.termux/files/home/storage/shared/BLENDER ANIMATIONS DECOMPLIE/SOLDIER/Demo_Animations//soldier_animations.qc"
     )
 def unregister():
