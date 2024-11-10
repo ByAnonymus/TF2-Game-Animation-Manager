@@ -189,28 +189,7 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
             t.id = bpy.data.objects[bpy.context.active_object.name]
             t.data_path = "pose.bones[\"Properties\"][\"" + suffix_enum + "\"]"
             d.expression = d.expression + " if " + expression + " == 0 else " + suffix_enum
-    '''elif should_use_eval == True:
-        constraint.driver_remove("influence")
-        constraint.driver_remove("eval_time")
-        constraint.influence = 1
-        eval = constraint.driver_add("eval_time")
-        d = eval.driver
-        d.type = "SCRIPTED"
-        d.expression = expression
-        v = d.variables.new()
-        v.name = prop
-        t = v.targets[0]                
-        t.id_type = 'OBJECT'                
-        t.id = bpy.data.objects[bpy.context.active_object.name]        
-        t.data_path = "pose.bones[\"Prop_holder\"][\"" + prop + "\"]"
-        d.expression = "(" + d.expression + ")*" + suffix_enum    
-        v = d.variables.new()                
-        v.name = suffix_enum                
-        t = v.targets[0]                
-        t.id_type = 'OBJECT'                
-        t.id = bpy.data.objects[bpy.context.active_object.name]  
-        t.data_path = "pose.bones[\"Properties\"][\"" + suffix_enum + "\"]"
-'''
+    
 class BYANON_OT_anim_optimize(bpy.types.Operator):
     bl_idname = 'byanon.optimize'
     bl_label = 'Optimize'
@@ -755,6 +734,8 @@ class BYANON_UL_CustomPropsList(bpy.types.UIList):
                 filtered[i] &= ~self.bitflag_filter_item
             find = f'pose.bones["Properties"]["{item.name}"]'
             if context.object.animation_data.drivers.find(find) != None:
+                filtered[i] &= ~self.bitflag_filter_item
+            if "Duration" in item.name:
                 filtered[i] &= ~self.bitflag_filter_item
         return filtered, []
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
