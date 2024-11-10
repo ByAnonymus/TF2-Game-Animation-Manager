@@ -750,7 +750,8 @@ class BYANON_UL_CustomPropsList(bpy.types.UIList):
 class CustomPropertyItem(bpy.types.PropertyGroup):
     name: bpy.props.StringProperty()
     value: bpy.props.StringProperty()
-
+class BYANON_OT_nla_adder(bpy.types.Operator):
+    pass
 classes = [BYANON_PT_anim_parent, BYANON_OT_anim_port, BYANON_OT_anim_optimize, BYANON_OT_anim_unoptimize, BYANON_OT_anim_scan, BYANON_OT_anim_base, BYANON_PT_anim_porter, BYANON_PT_anim_manager, CustomPropertyItem,
     BYANON_OT_UpdateCustomProps,
     BYANON_UL_CustomPropsList,]
