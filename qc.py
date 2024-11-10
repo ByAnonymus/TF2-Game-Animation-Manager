@@ -32,8 +32,10 @@ def setup_ikchain(end_bone, bone_name, ik_name):
 def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kwargs):
     only_ik_bone = kwargs.get('only_ik', None)
     should_use_eval = kwargs.get('eval_driver', None)
+    for_nla = kwargs.get('for_nla', None)
     prop = anim_name.lower().replace("_" + suffix_enum.lower(), "")
     Prop_holder = bpy.context.active_object.pose.bones["Prop_holder"]
+    For_nla_bone = bpy.context.active_object.pose.bones["FOR_NLA"]
     if only_ik_bone == None:
         if bool(Prop_holder.get(prop)) == False:
             Prop_holder[prop] = float(0)
@@ -49,117 +51,94 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                     t.id_type = 'OBJECT'
                     t.id = bpy.data.objects[bpy.context.active_object.name]
                     t.data_path = "pose.bones[\"Properties\"][\"" + i +"\"]"
-                    
-        for active_bone in bpy.context.active_object.pose.bones:
-            if (active_bone.name not in ["Properties", "Movement", "rootTransform", "AIM", "Prop_holder", "bip_hand_L.001"]):
-            
-                bpy.context.active_object.pose.bones[active_bone.name].constraints.new('ACTION')
-                bpy.context.active_object.pose.bones[active_bone.name].constraints["Action"].name = anim_name
-                constraint = bpy.context.active_object.pose.bones[active_bone.name].constraints[anim_name]
-                
-                constraint.action = bpy.data.actions[anim_name]
-                constraint.frame_end = int(bpy.data.actions[anim_name].frame_range[1])
-                if constraint.frame_end == 0:
-                    constraint.use_eval_time = True
-                else:
-                    constraint.target = active_bone.id_data
-                    if bool(bpy.context.active_object.pose.bones.get(prop)) == False:
-                        bpy.ops.object.mode_set(mode='EDIT')
-                        bpy.ops.armature.bone_primitive_add(name=prop)
-                        bpy.ops.object.mode_set(mode='POSE')
-                        subtarget_bone = bpy.context.active_object.pose.bones[prop]
-                        eval =subtarget_bone.driver_add("location", 0)
-                        d = eval.driver
-                        d.type = "SCRIPTED"
-                        d.expression = prop
-                        v = d.variables.new()
-                        v.name = prop
-                        t = v.targets[0]
-                        t.id_type = 'OBJECT'
-                        t.id = bpy.data.objects[bpy.context.active_object.name]
-                        t.data_path = "pose.bones[\"Prop_holder\"][\"" + prop + "\"]"
-                    constraint.subtarget= prop
-                    constraint.target_space = 'LOCAL'
-                    constraint.max = constraint.frame_end
-                    property_manager = Prop_holder.id_properties_ui(prop)
-                    property_manager.update(min=constraint.min, max=constraint.max, soft_min=constraint.min, soft_max=constraint.max, step=1)
-                Properties_bone = bpy.context.active_object.pose.bones['Properties']
-                '''eval = constraint.driver_add("eval_time")
-                d = eval.driver
-                d.type = "SCRIPTED"
-                d.expression = "Duration"
-                v = d.variables.new()
-                v.name = "Duration"
-                t = v.targets[0]
-                t.id_type = 'OBJECT'
-                t.id = bpy.data.objects[bpy.context.active_object.name]
-                if "stand" in constraint.name:
-                    t.data_path = "pose.bones[\"Properties\"][\"Stand_Duration\"]"
-                    Properties_bone["Stand_Duration"] = 0.0
-                    Properties_bone.keyframe_insert(data_path = '["Stand_Duration"]', frame = 0)
-                    #print("done")
-                    Properties_bone["Stand_Duration"] = 1.0
-                    Properties_bone.keyframe_insert(data_path = '["Stand_Duration"]', frame = constraint.frame_end)
-                elif "Crouch" in constraint.name:
-                    t.data_path = "pose.bones[\"Properties\"][\"Crouch_Duration\"]"
-                    Properties_bone["Crouch_Duration"] = 0.0
-                    Properties_bone.keyframe_insert(data_path = '["Crouch_Duration"]', frame = 0)
-                    #print("done")
-                    Properties_bone["Crouch_Duration"] = 1.0
-                    Properties_bone.keyframe_insert(data_path = '["Crouch_Duration"]', frame = constraint.frame_end)
-                elif "CrouchWalk" in constraint.name:
-                    t.data_path = "pose.bones[\"Properties\"][\"CrouchWalk_Duration\"]"
-                    Properties_bone["CrouchWalk_Duration"] = 0.0
-                    Properties_bone.keyframe_insert(data_path = '["CrouchWalk_Duration"]', frame = 0)
-                    #print("done")
-                    Properties_bone["CrouchWalk_Duration"] = 1.0
-                    Properties_bone.keyframe_insert(data_path = '["CrouchWalk_Duration"]', frame = constraint.frame_end)
-                if "run" in constraint.name:
-                    t.data_path = "pose.bones[\"Properties\"][\"Run_Duration\"]"'''
-                if should_use_eval == None:
-                    eval = constraint.driver_add("influence")
-                else:
-                    constraint.driver_remove("eval_time")
-                    eval = constraint.driver_add("eval_time")
-                    Prop_holder.driver_remove("[\"" + prop + "\"]")
-                    d = constraint.driver_add("influence").driver
-                    d.type="SCRIPTED"
-                    d.use_self = True
-                    d.expression = "1 if self.eval_time > 0 else 0"
-                d = eval.driver
-                d.type = "SCRIPTED"
-                d.expression = prop
+        if for_nla == True:
+            active_bone = For_nla_bone
+            bpy.context.active_object.pose.bones[active_bone.name].constraints.new('ACTION')
+            bpy.context.active_object.pose.bones[active_bone.name].constraints["Action"].name = anim_name
+            constraint = bpy.context.active_object.pose.bones[active_bone.name].constraints[anim_name]
+            constraint.use_eval_time = True
+            constraint.action = bpy.data.actions[anim_name]
+            constraint.frame_end = int(bpy.data.actions[anim_name].frame_range[1])
+        elif for_nla == None:
+            for active_bone in bpy.context.active_object.pose.bones:
+                if active_bone.name in bpy.context.active_object.data.collections["Base"].bones:
+                    bpy.context.active_object.pose.bones[active_bone.name].constraints.new('ACTION')
+                    bpy.context.active_object.pose.bones[active_bone.name].constraints["Action"].name = anim_name
+                    constraint = bpy.context.active_object.pose.bones[active_bone.name].constraints[anim_name]
 
-                for i in variables:
-                    if i in constraint.name:
-                        v = d.variables.new()
-                        v.name = i
-                        t = v.targets[0]
-                        t.id_type = 'OBJECT'
-                        t.id = bpy.data.objects[bpy.context.active_object.name]
-                        t.data_path = "pose.bones[\"Properties\"][\"" + i + "\"]"
-                v = d.variables.new()
-                v.name = prop
-                t = v.targets[0]
-                t.id_type = 'OBJECT'
-                t.id = bpy.data.objects[bpy.context.active_object.name]
-                t.data_path = "pose.bones[\"Prop_holder\"][\"" + prop + "\"]"
-                d.expression = "(" + d.expression + ")*" + suffix_enum
-                if "crouch" in constraint.name.lower():
-                    d.expression = "(" + d.expression + ")*Crouch"
-                v = d.variables.new()
-                v.name = suffix_enum
-                t = v.targets[0]
-                t.id_type = 'OBJECT'
-                t.id = bpy.data.objects[bpy.context.active_object.name]
-                t.data_path = "pose.bones[\"Properties\"][\"" + suffix_enum + "\"]"
-                v = d.variables.new()
-                v.name = "Crouch"
-                t = v.targets[0]
-                t.id_type = 'OBJECT'
-                t.id = bpy.data.objects[bpy.context.active_object.name]
-                t.data_path = "pose.bones[\"Properties\"][\"Crouch\"]"
-                print("added constraint to " + active_bone.name+" for "+constraint.name)
+                    constraint.action = bpy.data.actions[anim_name]
+                    constraint.frame_end = int(bpy.data.actions[anim_name].frame_range[1])
+                    if constraint.frame_end == 0:
+                        constraint.use_eval_time = True
+                    else:
+                        constraint.target = bpy.context.active_object
+                        if bool(bpy.context.active_object.pose.bones.get(prop)) == False:
+                            bpy.ops.object.mode_set(mode='EDIT')
+                            bpy.ops.armature.bone_primitive_add(name=prop)
+                            bpy.ops.object.mode_set(mode='POSE')
+                            subtarget_bone = bpy.context.active_object.pose.bones[prop]
+                            bpy.context.active_object.data.collections["DO NOT TOUCH"].assign(subtarget_bone)
+                            eval =subtarget_bone.driver_add("location", 0)
+                            d = eval.driver
+                            d.type = "SCRIPTED"
+                            d.expression = prop
+                            v = d.variables.new()
+                            v.name = prop
+                            t = v.targets[0]
+                            t.id_type = 'OBJECT'
+                            t.id = bpy.data.objects[bpy.context.active_object.name]
+                            t.data_path = "pose.bones[\"Prop_holder\"][\"" + prop + "\"]"
+                        constraint.subtarget= prop
+                        constraint.target_space = 'LOCAL'
+                        constraint.max = constraint.frame_end
+                        property_manager = Prop_holder.id_properties_ui(prop)
+                        property_manager.update(min=constraint.min, max=constraint.max, soft_min=constraint.min, soft_max=constraint.max, step=1)
+                    Properties_bone = bpy.context.active_object.pose.bones['Properties']
+                    if should_use_eval == None:
+                        eval = constraint.driver_add("influence")
+                    else:
+                        constraint.driver_remove("eval_time")
+                        eval = constraint.driver_add("eval_time")
+                        Prop_holder.driver_remove("[\"" + prop + "\"]")
+                        d = constraint.driver_add("influence").driver
+                        d.type="SCRIPTED"
+                        d.use_self = True
+                        d.expression = "1 if self.eval_time > 0 else 0"
+                    d = eval.driver
+                    d.type = "SCRIPTED"
+                    d.expression = prop
+                    for i in variables:
+                        if i in constraint.name:
+                            v = d.variables.new()
+                            v.name = i
+                            t = v.targets[0]
+                            t.id_type = 'OBJECT'
+                            t.id = bpy.data.objects[bpy.context.active_object.name]
+                            t.data_path = "pose.bones[\"Properties\"][\"" + i + "\"]"
+                    v = d.variables.new()
+                    v.name = prop
+                    t = v.targets[0]
+                    t.id_type = 'OBJECT'
+                    t.id = bpy.data.objects[bpy.context.active_object.name]
+                    t.data_path = "pose.bones[\"Prop_holder\"][\"" + prop + "\"]"
+                    d.expression = "(" + d.expression + ")*" + suffix_enum
+                    if "crouch" in constraint.name.lower():
+                        d.expression = "(" + d.expression + ")*Crouch"
+                    else:
+                        d.expression = "(" + d.expression + ")*(1-Crouch)"
+                    v = d.variables.new()
+                    v.name = suffix_enum
+                    t = v.targets[0]
+                    t.id_type = 'OBJECT'
+                    t.id = bpy.data.objects[bpy.context.active_object.name]
+                    t.data_path = "pose.bones[\"Properties\"][\"" + suffix_enum + "\"]"
+                    v = d.variables.new()
+                    v.name = "Crouch"
+                    t = v.targets[0]
+                    t.id_type = 'OBJECT'
+                    t.id = bpy.data.objects[bpy.context.active_object.name]
+                    t.data_path = "pose.bones[\"Properties\"][\"Crouch\"]"
+                    print("added constraint to " + active_bone.name+" for "+constraint.name)
     else:
         bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints.new('ACTION')
         bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints["Action"].name = anim_name
@@ -277,14 +256,16 @@ class BYANON_OT_anim_base(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.armature.bone_primitive_add(name='Properties')
         bpy.ops.armature.bone_primitive_add(name='Prop_holder')
+        bpy.ops.armature.bone_primitive_add(name='FOR_NLA')
         bpy.ops.armature.bone_primitive_add(name='Movement')
         bpy.ops.armature.bone_primitive_add(name='AIM')
         bpy.ops.object.mode_set(mode='POSE')
         prop_names = ["move_x", "move_y", "radius_move", "angle_move", "look_x", "look_y","radius_look", "angle_look", "Crouch", "Stand_Duration", "Crouch_Duration","Run_Duration"]
         variables = ["radius_move", "angle_move","radius_look", "angle_look", "Crouch"]
         Properties_bone = bpy.context.active_object.pose.bones['Properties']
+        Props_holder = bpy.context.active_object.pose.bones['Prop_holder']
+        For_nla = bpy.context.active_object.pose.bones["FOR_NLA"]
         bpy.context.active_bone.id_data.bones['Prop_holder'].hide = False
-        
         for i in prop_names:
             Properties_bone[i] = float(0)
             Properties_bone.id_properties_ensure()  # Make sure the manager is updated
@@ -427,11 +408,11 @@ class BYANON_OT_anim_base(bpy.types.Operator):
         Movement_bone.constraints["Limit Location"].use_max_z = True
 
         Movement_bone.constraints["Limit Location"].min_x = -10
-        Movement_bone.constraints["Limit Location"].min_y = -10
+        Movement_bone.constraints["Limit Location"].min_y = 0
         Movement_bone.constraints["Limit Location"].min_z = -10
 
         Movement_bone.constraints["Limit Location"].max_x = 10
-        Movement_bone.constraints["Limit Location"].max_y = 10
+        Movement_bone.constraints["Limit Location"].max_y = 0
         Movement_bone.constraints["Limit Location"].max_z = 10
         Movement_bone.constraints["Limit Location"].use_transform_limit = True
         Movement_bone.constraints["Limit Location"].owner_space = 'LOCAL'
@@ -456,6 +437,15 @@ class BYANON_OT_anim_base(bpy.types.Operator):
         AIM_bone.constraints["Limit Location"].max_z = 0
         AIM_bone.constraints["Limit Location"].use_transform_limit = True
         AIM_bone.constraints["Limit Location"].owner_space = 'LOCAL'
+        bpy.context.active_object.data.collections[0].name = "Base"
+        bpy.context.active_object.data.collections.new(name="Controls")
+        bpy.context.active_object.data.collections.new(name="DO NOT TOUCH")
+        bpy.context.active_object.data.collections["Controls"].assign(AIM_bone)
+        bpy.context.active_object.data.collections["Controls"].assign(Movement_bone)
+        bpy.context.active_object.data.collections["DO NOT TOUCH"].assign(Properties_bone)
+        bpy.context.active_object.data.collections["DO NOT TOUCH"].assign(Props_holder)
+        bpy.context.active_object.data.collections["DO NOT TOUCH"].assign(For_nla)
+        bpy.context.active_object.data.collections["DO NOT TOUCH"].is_visible = False
         return {'FINISHED'}
 class BYANON_OT_anim_port(bpy.types.Operator):
     bl_idname = 'byanon.anim_port'
@@ -560,14 +550,14 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                         break
                 for i in range(b1, b2):
                     if "delta" in buffer[i]:
-                        b =b.removesuffix("\" {\n").removeprefix("$sequence \"").removesuffix("/")                
-                        print(b)     
-                        ANON_OT_load_additive.filepath = folder + "/" + b + ".smd"                                
+                        b =b.removesuffix("\" {\n").removeprefix("$sequence \"").removesuffix("/")
+                        print(b)
+                        ANON_OT_load_additive.filepath = folder + "/" + b + ".smd"
                         create_action(b)                                
-                        ANON_OT_load_additive.execute(ANON_OT_load_additive, context)                                
-                        print("ported add anim " + b)                #animation_correct(list, b)                                
-                        ANON_OT_load_additive.filepath = folder                
-                        const_create(b, "Crouch",variables,prop_names, self.suffix_enum, eval_driver=True)
+                        ANON_OT_load_additive.execute(ANON_OT_load_additive, context)
+                        print("ported add anim " + b)
+                        ANON_OT_load_additive.filepath = folder
+                        const_create(b, "Crouch",variables,prop_names, self.suffix_enum, for_nla = True)
                         break        
         list = []
         line_index = -1
@@ -593,17 +583,15 @@ class BYANON_OT_anim_port(bpy.types.Operator):
             if list.index(b) != 0 and list.index(b) % 10 != 0:        
                 n = list.index(b) % 10
                 match n:
-                    case 1:
-                        const_create(b, "1-sqrt((-1-move_x)**2+(-1-move_y)**2)", variables, prop_names, self.suffix_enum)
-                    case 2:                        const_create(b, "1-sqrt((0-move_x)**2+(-1-move_y)**2)", variables, prop_names, self.suffix_enum)
-                    case 3:                        const_create(b, "1-sqrt((1-move_x)**2+(-1-move_y)**2)", variables, prop_names, self.suffix_enum)                    
-                    case 4:                        const_create(b, "1-sqrt((-1-move_x)**2+(0-move_y)**2)", variables, prop_names, self.suffix_enum)                    
-                    case 5:                        const_create("stand_" + self.suffix_enum, "1-sqrt((0-move_x)**2+(0-move_y)**2)", variables, prop_names, self.suffix_enum)                    
-                    case 6:                        const_create(b, "1-sqrt((1-move_x)**2+(0-move_y)**2)", variables, prop_names, self.suffix_enum)                    
-                    case 7:                        const_create(b, "1-sqrt((-1-move_x)**2+(1-move_y)**2)", variables, prop_names, self.suffix_enum)                    
-                    case 8:                        const_create(b, "1-sqrt((0-move_x)**2+(1-move_y)**2)", variables, prop_names, self.suffix_enum)                   
-                    case 9:                        const_create(b, "1-sqrt((1-move_x)**2+(1-move_y)**2)", variables, prop_names, self.suffix_enum)
-            print("added driver {b}")
+                    case 1: const_create(b, "1-sqrt((-1-move_x)**2+(-1-move_y)**2)", variables, prop_names, self.suffix_enum)
+                    case 2: const_create(b, "1-sqrt((0-move_x)**2+(-1-move_y)**2)", variables, prop_names, self.suffix_enum)
+                    case 3: const_create(b, "1-sqrt((1-move_x)**2+(-1-move_y)**2)", variables, prop_names, self.suffix_enum)
+                    case 4: const_create(b, "1-sqrt((-1-move_x)**2+(0-move_y)**2)", variables, prop_names, self.suffix_enum)
+                    case 5: const_create("stand_" + self.suffix_enum, "1-sqrt((0-move_x)**2+(0-move_y)**2)", variables, prop_names, self.suffix_enum)
+                    case 6: const_create(b, "1-sqrt((1-move_x)**2+(0-move_y)**2)", variables, prop_names, self.suffix_enum)
+                    case 7: const_create(b, "1-sqrt((-1-move_x)**2+(1-move_y)**2)", variables, prop_names, self.suffix_enum)
+                    case 8: const_create(b, "1-sqrt((0-move_x)**2+(1-move_y)**2)", variables, prop_names, self.suffix_enum)
+                    case 9: const_create(b, "1-sqrt((1-move_x)**2+(1-move_y)**2)", variables, prop_names, self.suffix_enum)
         bpy.data.actions.new("IK_" + self.suffix_enum)
         bpy.context.active_object.animation_data.action = bpy.data.actions["IK_" + self.suffix_enum]
         bpy.ops.object.mode_set(mode='POSE')
@@ -635,11 +623,11 @@ class BYANON_OT_anim_port(bpy.types.Operator):
             Properties_bone["Run_Duration"] = 0.0
             Properties_bone.keyframe_insert(data_path = '["Run_Duration"]', frame = 0)
             Properties_bone["Run_Duration"] = 1.0
-            Properties_bone.keyframe_insert(data_path = '["Run_Duration"]', frame = bpy.context.active_object.pose.bones["bip_pelvis"].constraints["a_runNE_"+self.suffix_enum].frame_end)
+            Properties_bone.keyframe_insert(data_path = '["Run_Duration"]', frame = bpy.data.actions["a_runNE_"+self.suffix_enum].frame_end)
             Properties_bone["Stand_Duration"] = 0.0
             Properties_bone.keyframe_insert(data_path = '["Stand_Duration"]', frame = 0)
             Properties_bone["Stand_Duration"] = 1.0
-            Properties_bone.keyframe_insert(data_path = '["Stand_Duration"]', frame = bpy.context.active_object.pose.bones["bip_pelvis"].constraints["stand_" + self.suffix_enum].frame_end)
+            Properties_bone.keyframe_insert(data_path = '["Stand_Duration"]', frame = bpy.data.actions["stand_" + self.suffix_enum].frame_end)
             bpy.context.active_object.animation_data.action.name = "Config"
         else:
             bpy.context.active_object.animation_data.action = bpy.data.actions["Config"]
