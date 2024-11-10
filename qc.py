@@ -712,42 +712,6 @@ class BYANON_PT_anim_manager(bpy.types.Panel):
         
         # Display the custom properties in a UI list
         layout.template_list("BYANON_UL_CustomPropsList", "", context.scene, "custom_props_collection", context.scene, "custom_props_collection_index")
-'''class BYANON_UL_custom_prop_nodriver(bpy.types.UIList):
-
-    def filter_items(self, context, data, propname):
-        #props = context.scene.hisanimvars
-        items = getattr(data, propname)
-        filtered = [self.bitflag_filter_item] * len(items)
-        for i, item in enumerate(items):
-            if self.filter_name.lower() not in item.name.lower():
-                filtered[i] &= ~self.bitflag_filter_item
-            
-            find = f'pose.bones["Prop_holder"]["{item.name}"].value'
-            if context.object.animation_data.drivers.find(find) != None:
-                filtered[i] &= ~self.bitflag_filter_item
-
-        return filtered, []
-    
-    def draw_item(self, _context, layout, _data, item, icon, active_data, _active_propname, index):
-        obj = active_data
-        key_block = item
-        if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            row = layout.row()
-            row.label(text='', icon='SHAPEKEY_DATA')
-            if not item.id_data.use_relative:
-                row.prop(key_block, "frame", text="")
-            elif index > 0:
-                row.prop(key_block, "value", text=item.name, emboss=True, slider=True)
-                row.prop_decorator(item, "value")
-            else:
-                row.label(text="")
-            row.prop(key_block, "mute", text="", emboss=False)
-        elif self.layout_type == 'GRID':
-            layout.alignment = 'CENTER'
-            layout.label(text="", icon_value=icon)'''
-
-import bpy
-
 # Operator to update custom properties list
 class BYANON_OT_UpdateCustomProps(bpy.types.Operator):
     bl_idname = "object.update_custom_props"
@@ -755,19 +719,25 @@ class BYANON_OT_UpdateCustomProps(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.object
-        bone_name = "Prop_holder"
+        bone_name = "Properties"
+        bone_name2 = "Prop_holder"
 
         if obj and obj.type == 'ARMATURE' and bone_name in obj.pose.bones:
             # Clear any existing property UI items
             context.scene.custom_props_collection.clear()
 
             bone = obj.pose.bones[bone_name]
+            bone2 = obj.pose.bones[bone_name2]
             for key in bone.keys():
                 if not key.startswith("_"):  # Skip internal properties
                     item = context.scene.custom_props_collection.add()
                     item.name = key
                     item.value = key  # Store the property key instead of its value
-
+            for key in bone2.keys():
+                if not key.startswith("_"):  # Skip internal properties
+                    item = context.scene.custom_props_collection.add()
+                    item.name = key
+                    item.value = key  # Store the property key instead of its value
         return {'FINISHED'}
 
 # Define a UI List to display custom properties
@@ -783,14 +753,18 @@ class BYANON_UL_CustomPropsList(bpy.types.UIList):
             find = f'pose.bones["Prop_holder"]["{item.name}"]'
             if context.object.animation_data.drivers.find(find) != None:
                 filtered[i] &= ~self.bitflag_filter_item
-
+            find = f'pose.bones["Properties"]["{item.name}"]'
+            if context.object.animation_data.drivers.find(find) != None:
+                filtered[i] &= ~self.bitflag_filter_item
         return filtered, []
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         obj = context.object
-        bone_name = "Prop_holder"
+        bone_name = "Properties"
+        bone_name2 = "Prop_holder"
 
         if obj and obj.type == 'ARMATURE' and bone_name in obj.pose.bones:
             bone = obj.pose.bones[bone_name]
+            bone2 = obj.pose.bones[bone_name2]
 
             # Retrieve the actual custom property value by its name
             if item.name in bone.keys():
@@ -798,7 +772,11 @@ class BYANON_UL_CustomPropsList(bpy.types.UIList):
                 
                 # Directly display the property as a slider
                 row.prop(bone, f'["{item.name}"]', text=item.name, slider=True)
-
+            if item.name in bone2.keys():
+                row = layout.row()
+                
+                # Directly display the property as a slider
+                row.prop(bone2, f'["{item.name}"]', text=item.name, slider=True)
 # Custom property item for UI list display
 class CustomPropertyItem(bpy.types.PropertyGroup):
     name: bpy.props.StringProperty()
