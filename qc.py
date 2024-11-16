@@ -38,32 +38,49 @@ def add_action_strip(action_name, track_name):
     strip.extrapolation = 'NOTHING'  # Enables automatic blending with previous/next strips
     
     print(f"Added action strip '{action_name}' to track '{track_name}' starting at frame {current_frame}.")
-
-def setup_ikchain(end_bone, bone_name, ik_name):
+def add_ik_actions(ik_target, subtarget, b):
+    bpy.ops.pose.select_all(action='DESELECT')
+    bpy.context.active_object.pose.bones[subtarget].constraints["IK"].influence = 0
+    bpy.context.active_object.data.bones.active = bpy.context.active_object.pose.bones[ik_target].bone
+    bpy.context.active_object.pose.bones[ik_target].bone.select = True
+    bpy.context.active_object.pose.bones[ik_target].constraints.new('COPY_TRANSFORMS')
+    bpy.context.active_object.pose.bones[ik_target].constraints["Copy Transforms"].target = bpy.context.active_object
+    bpy.context.active_object.pose.bones[ik_target].constraints["Copy Transforms"].subtarget = subtarget
+    bpy.ops.nla.bake(frame_start=0, frame_end=int(bpy.data.actions[b].frame_range[1]), visual_keying=True, clear_constraints=False, use_current_action=True, bake_types={'POSE'})
+    bpy.context.active_object.pose.bones[ik_target].constraints.remove(bpy.context.active_object.pose.bones[ik_target].constraints["Copy Transforms"])
+    bpy.context.active_object.pose.bones[subtarget].constraints["IK"].influence = 1
+               
+def setup_ikchain(end_bone, bone_name, ik_name, **kwargs):
+    move =kwargs.get('move', None)
     bpy.ops.object.mode_set(mode='EDIT')
     cb = bpy.context.active_object.data.edit_bones.new(ik_name)
 
     cb.head = bpy.context.active_object.data.edit_bones[end_bone].head
     cb.tail = bpy.context.active_object.data.edit_bones[end_bone].tail
     cb.matrix = bpy.context.active_object.data.edit_bones[end_bone].matrix
-    cb.parent = bpy.context.active_object.data.edit_bones[bone_name]
+    if bone_name != "":
+        cb.parent = bpy.context.active_object.data.edit_bones[bone_name]
     bpy.ops.object.mode_set(mode='POSE')
     bpy.context.active_object.pose.bones[end_bone].constraints.new('IK')
-    constraint = bpy.context.active_object.pose.bones[end_bone].constraints["IK"]
+    constraint = bpy.context.active_object.pose.bones[end_bone].constraints["IK"] 
     constraint.target = bpy.context.active_object
     constraint.subtarget = ik_name
     constraint.use_rotation = True
-    constraint.chain_count = 4
-    eval = constraint.driver_add("influence")
-    d = eval.driver
-    d.type = "SCRIPTED"
-    d.expression = "radius_look"
-    v = d.variables.new()
-    v.name = "radius_look"
-    t = v.targets[0]
-    t.id_type = 'OBJECT'
-    t.id = bpy.data.objects[bpy.context.active_object.name]
-    t.data_path = "pose.bones[\"Properties\"][\"radius_look\"]"
+    if move:
+        constraint.influence = 1
+        constraint.chain_count = 3
+    else:
+        eval = constraint.driver_add("influence")
+        constraint.chain_count = 4
+        d = eval.driver
+        d.type = "SCRIPTED"
+        d.expression = "var"
+        v = d.variables.new()
+        v.name = "var"
+        t = v.targets[0]
+        t.id_type = 'OBJECT'
+        t.id = bpy.data.objects[bpy.context.active_object.name]
+        t.data_path = "pose.bones[\"Properties\"][\"radius_look\"]"
 def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kwargs):
     only_ik_bone = kwargs.get('only_ik', None)
     should_use_eval = kwargs.get('eval_driver', None)
@@ -78,6 +95,15 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
             d = eval.driver
             d.type = "SCRIPTED"
             d.expression = expression
+            if "crouch" in prop.lower():
+                d.expression = "(" + d.expression + ")*Crouch"
+            else:
+                d.expression = "(" + d.expression + ")*(1-Crouch)"
+            For_nla_bone = bpy.context.active_object.pose.bones["FOR_NLA"]
+            if "run" in prop.lower() or "walk" in prop.lower():
+                d.expression = "(" + d.expression + ")*radius_move"
+            else:
+                d.expression = "(" + d.expression + ")*(1-radius_move)"
             for i in variables:
                 if i in d.expression:
                     v = d.variables.new()
@@ -86,16 +112,6 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                     t.id_type = 'OBJECT'
                     t.id = bpy.data.objects[bpy.context.active_object.name]
                     t.data_path = "pose.bones[\"Properties\"][\"" + i +"\"]"
-            if "crouch" in prop.lower():
-                d.expression = "(" + d.expression + ")*Crouch"
-            else:
-                d.expression = "(" + d.expression + ")*(1-Crouch)"
-            v = d.variables.new()
-            v.name = "Crouch"
-            t = v.targets[0]
-            t.id_type = 'OBJECT'
-            t.id = bpy.data.objects[bpy.context.active_object.name]
-            t.data_path = "pose.bones[\"Properties\"][\"Crouch\"]"
         if for_nla == True:
             active_bone = For_nla_bone
             bpy.context.active_object.pose.bones[active_bone.name].constraints.new('ACTION')
@@ -492,6 +508,12 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         import_options =[]
         if bpy.context.active_object.pose.bones["bip_hand_L"].constraints.get("IK") == None:
             setup_ikchain("bip_hand_L", "weapon_bone", "bip_hand_L.001")
+        if bpy.context.active_object.pose.bones["bip_foot_L"].constraints.get("IK") == None:
+            setup_ikchain("bip_foot_L", "", "bip_foot_L.001", move=True)
+        bpy.context.active_object.data.collections["Base"].assign(bpy.context.active_object.pose.bones["bip_foot_L.001"])
+        if bpy.context.active_object.pose.bones["bip_foot_R"].constraints.get("IK") == None:
+            setup_ikchain("bip_foot_R", "", "bip_foot_R.001", move=True)
+        bpy.context.active_object.data.collections["Base"].assign(bpy.context.active_object.pose.bones["bip_foot_R.001"])
         Properties_bone = bpy.context.active_object.pose.bones['Properties']
         list = []
         line_index = -1
@@ -522,7 +544,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         line_index = -1
         for i in buffer:
             line_index +=1
-            if ("$sequence \"") in i and ("aimmatrix") in i and ("run") in i and ("crouch") not in i and ("runS") not in i:
+            if ("$sequence \""+self.suffix_enum+"_aimmatrix") in i:
                 list.append(i.removesuffix("\n"))
                 list.append(buffer[line_index + 4].removeprefix("	\"").removesuffix("\"\n"))
                 list.append(buffer[line_index + 5].removeprefix("	\"").removesuffix("\"\n"))
@@ -567,7 +589,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                         const_create(b, "radius_look*((1-abs(angle_look-45)/45) if abs(angle_look-45)<=45 else 0)", variables, prop_names, self.suffix_enum)
         for b in buffer:            
             print(b)            
-            if (self.suffix_enum.lower()+"_" in b.lower() or self.suffix_enum.lower()+"\"" in b.lower() ) and "@" not in b and "layer" not in b and "$sequence" in b and "aim" not in b and "swim" not in b.lower() and "crouch" not in b.lower():
+            if (self.suffix_enum.lower()+"_" in b.lower() or self.suffix_enum.lower()+"\"" in b.lower() ) and "@" not in b and "layer" not in b and "$sequence" in b and "aim" not in b:
                 b1 = buffer.index(b)         
                 for i in range(b1, len(buffer)+1):
                     if buffer[i] == "}\n":
@@ -603,29 +625,36 @@ class BYANON_OT_anim_port(bpy.types.Operator):
             if list.index(b) != 0 and list.index(b) % 10 != 0 and self.suffix_enum in b:
                 bpy.ops.import_scene.smd(filepath = folder + "/" + b + ".smd", rotMode = 'QUATERNION')
                 animation_correct(list, b)
+                bpy.context.scene.frame_set(0)
+                add_ik_actions("bip_foot_L.001", "bip_foot_L", b)
+                add_ik_actions("bip_foot_R.001", "bip_foot_R", b)
         bpy.ops.import_scene.smd(filepath = folder + "/" + "stand_" + self.suffix_enum + ".smd", rotMode = 'QUATERNION')
+        bpy.context.scene.frame_set(0)
+        bpy.ops.object.mode_set(mode='POSE')
+        add_ik_actions("bip_foot_L.001", "bip_foot_L", "stand_" + self.suffix_enum)
+        add_ik_actions("bip_foot_R.001", "bip_foot_R", "stand_" + self.suffix_enum)
         for b in list:
             if list.index(b) != 0 and list.index(b) % 10 != 0:        
                 n = list.index(b) % 10
                 match n:
                     case 1:
-                        const_create(b, "radius_move*((1-abs(angle_move-225)/45) if abs(angle_move-225)<=45 else 0)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "((1-abs(angle_move-225)/45) if abs(angle_move-225)<=45 else 0)", variables, prop_names, self.suffix_enum)
                     case 2:
-                        const_create(b, "radius_move*((1-abs(angle_move-270)/45) if abs(angle_move-270)<=45 else 0)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "((1-abs(angle_move-270)/45) if abs(angle_move-270)<=45 else 0)", variables, prop_names, self.suffix_enum)
                     case 3:
-                        const_create(b, "radius_move*((1-abs(angle_move-315)/45) if abs(angle_move-315)<=45 else 0)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "((1-abs(angle_move-315)/45) if abs(angle_move-315)<=45 else 0)", variables, prop_names, self.suffix_enum)
                     case 4:
-                        const_create(b, "radius_move*((1-abs(angle_move-180)/45) if abs(angle_move-180)<=45 else 0)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "((1-abs(angle_move-180)/45) if abs(angle_move-180)<=45 else 0)", variables, prop_names, self.suffix_enum)
                     case 5:
                         const_create("stand_" + self.suffix_enum, "1-radius_move", variables, prop_names, self.suffix_enum)
                     case 6:
-                        const_create(b, "radius_move*((1-abs(angle_move-(0 if angle_move < 315 else 360))/45) if abs(angle_move-(0 if angle_move < 315 else 360))<=45 else 0)", variables, prop_names, self.suffix_enum) #need adjusting
+                        const_create(b, "((1-abs(angle_move-(0 if angle_move < 315 else 360))/45) if abs(angle_move-(0 if angle_move < 315 else 360))<=45 else 0)", variables, prop_names, self.suffix_enum) #need adjusting
                     case 7:
-                        const_create(b, "radius_move*((1-abs(angle_move-135)/45) if abs(angle_move-135)<=45 else 0)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "((1-abs(angle_move-135)/45) if abs(angle_move-135)<=45 else 0)", variables, prop_names, self.suffix_enum)
                     case 8:
-                        const_create(b, "radius_move*((1-abs(angle_move-90)/45) if abs(angle_move-90)<=45 else 0)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "((1-abs(angle_move-90)/45) if abs(angle_move-90)<=45 else 0)", variables, prop_names, self.suffix_enum)
                     case 9:
-                        const_create(b, "radius_move*((1-abs(angle_move-45)/45) if abs(angle_move-45)<=45 else 0)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "((1-abs(angle_move-45)/45) if abs(angle_move-45)<=45 else 0)", variables, prop_names, self.suffix_enum)
         bpy.data.actions.new("IK_" + self.suffix_enum)
         bpy.context.active_object.animation_data.action = bpy.data.actions["IK_" + self.suffix_enum]
         bpy.ops.object.mode_set(mode='POSE')
@@ -666,6 +695,8 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         else:
             bpy.context.active_object.animation_data.action = bpy.data.actions["Config"]
         Properties_bone[self.suffix_enum] = 0.0
+        bpy.context.active_object.data.collections["DO NOT TOUCH"].assign(bpy.context.active_object.pose.bones["bip_foot_L.001"])
+        bpy.context.active_object.data.collections["DO NOT TOUCH"].assign(bpy.context.active_object.pose.bones["bip_hand_L.001"])
         return {'FINISHED'}
     
 class BYANON_PT_anim_parent(bpy.types.Panel):
@@ -758,7 +789,7 @@ class BYANON_UL_CustomPropsList(bpy.types.UIList):
                 row = layout.row()
                 
                 # Directly display the property as a slider
-                row.prop(bone, f'["{item.name}"]', text=item.name, slider=True)
+                row.prop(bone, f'["{item.name}"]', text=item.name, slider= True)
 @persistent
 def update_custom_props_collection(scn = None):
     obj = bpy.context.object
@@ -836,8 +867,8 @@ def register():
     for i in classes:
         bpy.utils.register_class(i)
     bpy.types.Scene.qc_file_path = StringProperty(
-        name="TXT File Path",
-        default="C:/Program Files (x86)/Steam/steamapps/common/tf_misc_dir/root/models/player/Anims/PYRO/pyro_animations.qc"
+        name="QC File Path",
+        default="C:/Program Files (x86)/Steam/steamapps/common/tf_misc_dir/root/models/player/Anims/SOLDIER/soldier_animations.qc"
         #default="/data/data/com.termux/files/home/storage/shared/BLENDER ANIMATIONS DECOMPLIE/SOLDIER/Demo_Animations//soldier_animations.qc"
     )
     bpy.types.Scene.custom_props_collection = bpy.props.CollectionProperty(type=CustomPropertyItem)

@@ -215,7 +215,7 @@ def animation_correct(list, b):
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.select_all(action='DESELECT')
         bpy.context.view_layer.objects.active = bpy.data.objects["Empty"]
-        if list.index(b) != 0 and list.index(b) % 10 != 0 and "PRIMARY" in b:        
+        if list.index(b) != 0 and list.index(b) % 10 != 0:        
             n = list.index(b) % 10
             match n:
                 case 1 | 3 | 7|9:
