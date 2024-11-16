@@ -68,9 +68,7 @@ class ANON_OT_load_additive(Operator, ImportHelper):
                 bone.rotation_euler[1] = ry
                 bone.rotation_euler[2] = rz 
                 if bone.name == "bip_pelvis":
-                    bpy.ops.object.mode_set(mode='POSE')
-                    bone.bone.select = True
-                    bpy.ops.pose.rot_clear()
+                    bone.rotation_euler[2] += radians(90)
                 bone.rotation_mode = 'QUATERNION'
                 bone.keyframe_insert(data_path="rotation_quaternion")
             except KeyError:

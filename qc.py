@@ -1,9 +1,44 @@
 import bpy
+from bpy.app.handlers import persistent
 import math
 from .bonegenerator import *
 from .additive_animation_porter import *
 from bpy.props import StringProperty, IntProperty, EnumProperty
 from .driver_defs import *
+def add_action_strip(action_name, track_name):
+    obj = bpy.context.active_object
+    current_frame = bpy.context.scene.frame_current
+
+    # Ensure the object is an armature (or any object with an NLA editor)
+    if not obj or not obj.animation_data:
+        print("Error: No animation data found on the selected object.")
+        return
+    
+    # Find the action by name
+    action = bpy.data.actions.get(action_name)
+    if not action:
+        print(f"Error: Action '{action_name}' not found.")
+        return
+    
+    # Get the NLA tracks of the object
+    nla_tracks = obj.animation_data.nla_tracks
+
+    # Check if the specified track exists; if not, create it
+    track = nla_tracks.get(track_name)
+    if not track:
+        track = nla_tracks.new()
+        track.name = track_name
+
+    # Add the action as a new strip on the specified track
+    strip = track.strips.new(action_name, start=current_frame, action=action)
+    
+    # Optional: Set the strip to run in "Hold" mode if you'd like it to hold its final frame
+    strip.blend_type = 'REPLACE'  # Default blend mode
+    strip.use_auto_blend = True
+    strip.extrapolation = 'NOTHING'  # Enables automatic blending with previous/next strips
+    
+    print(f"Added action strip '{action_name}' to track '{track_name}' starting at frame {current_frame}.")
+
 def setup_ikchain(end_bone, bone_name, ik_name):
     bpy.ops.object.mode_set(mode='EDIT')
     cb = bpy.context.active_object.data.edit_bones.new(ik_name)
@@ -18,7 +53,7 @@ def setup_ikchain(end_bone, bone_name, ik_name):
     constraint.target = bpy.context.active_object
     constraint.subtarget = ik_name
     constraint.use_rotation = True
-    constraint.chain_count = 3
+    constraint.chain_count = 4
     eval = constraint.driver_add("influence")
     d = eval.driver
     d.type = "SCRIPTED"
@@ -51,6 +86,16 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                     t.id_type = 'OBJECT'
                     t.id = bpy.data.objects[bpy.context.active_object.name]
                     t.data_path = "pose.bones[\"Properties\"][\"" + i +"\"]"
+            if "crouch" in prop.lower():
+                d.expression = "(" + d.expression + ")*Crouch"
+            else:
+                d.expression = "(" + d.expression + ")*(1-Crouch)"
+            v = d.variables.new()
+            v.name = "Crouch"
+            t = v.targets[0]
+            t.id_type = 'OBJECT'
+            t.id = bpy.data.objects[bpy.context.active_object.name]
+            t.data_path = "pose.bones[\"Properties\"][\"Crouch\"]"
         if for_nla == True:
             active_bone = For_nla_bone
             bpy.context.active_object.pose.bones[active_bone.name].constraints.new('ACTION')
@@ -81,7 +126,7 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                             eval =subtarget_bone.driver_add("location", 0)
                             d = eval.driver
                             d.type = "SCRIPTED"
-                            d.expression = prop
+                            d.expression = "frame %" + str(constraint.frame_end)
                             v = d.variables.new()
                             v.name = prop
                             t = v.targets[0]
@@ -122,22 +167,12 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                     t.id = bpy.data.objects[bpy.context.active_object.name]
                     t.data_path = "pose.bones[\"Prop_holder\"][\"" + prop + "\"]"
                     d.expression = "(" + d.expression + ")*" + suffix_enum
-                    if "crouch" in constraint.name.lower():
-                        d.expression = "(" + d.expression + ")*Crouch"
-                    else:
-                        d.expression = "(" + d.expression + ")*(1-Crouch)"
                     v = d.variables.new()
                     v.name = suffix_enum
                     t = v.targets[0]
                     t.id_type = 'OBJECT'
                     t.id = bpy.data.objects[bpy.context.active_object.name]
                     t.data_path = "pose.bones[\"Properties\"][\"" + suffix_enum + "\"]"
-                    v = d.variables.new()
-                    v.name = "Crouch"
-                    t = v.targets[0]
-                    t.id_type = 'OBJECT'
-                    t.id = bpy.data.objects[bpy.context.active_object.name]
-                    t.data_path = "pose.bones[\"Properties\"][\"Crouch\"]"
                     print("added constraint to " + active_bone.name+" for "+constraint.name)
     else:
         bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints.new('ACTION')
@@ -275,6 +310,8 @@ class BYANON_OT_anim_base(bpy.types.Operator):
             else:
                 property_manager.update(min=-360, max=360, soft_min=-1, soft_max=1, step=0.5)
         
+        Movement_bone = bpy.context.active_object.pose.bones['Movement']    
+        AIM_bone = bpy.context.active_object.pose.bones['AIM']     
         #radius_move driver    
         eval = Properties_bone.driver_add("[\"radius_move\"]")
         d = eval.driver
@@ -321,19 +358,13 @@ class BYANON_OT_anim_base(bpy.types.Operator):
         eval = Properties_bone.driver_add("[\"angle_move\"]")
         d = eval.driver
         d.type = "SCRIPTED"
-        d.expression = "angle(move_x, move_y)"
+        d.expression = "degrees(atan2(loc[\"move_y\"], loc[\"move_x\"])) if atan2(loc[\"move_y\"], loc[\"move_x\"]) >= 0 else degrees(atan2(loc[\"move_y\"], loc[\"move_x\"])) +360"
         v = d.variables.new()
-        v.name = "move_x"
+        v.name = "loc"
         t = v.targets[0]
         t.id_type = 'OBJECT'
         t.id = bpy.data.objects[bpy.context.active_object.name]
-        t.data_path = "pose.bones[\"Properties\"][\"move_x\"]"
-        v = d.variables.new()
-        v.name = "move_y"
-        t = v.targets[0]
-        t.id_type = 'OBJECT'
-        t.id = bpy.data.objects[bpy.context.active_object.name]
-        t.data_path = "pose.bones[\"Properties\"][\"move_y\"]"
+        t.data_path = f'pose.bones["{Properties_bone.name}"]'
         
         #radius_look driver    
         eval = Properties_bone.driver_add("[\"radius_look\"]")
@@ -377,26 +408,20 @@ class BYANON_OT_anim_base(bpy.types.Operator):
         t.id = bpy.data.objects[bpy.context.active_object.name]
         t.data_path = "pose.bones[\"AIM\"].location[1]"
         
-        #angle_move driver
+        #angle_look driver
         eval = Properties_bone.driver_add("[\"angle_look\"]")
         d = eval.driver
         d.type = "SCRIPTED"
-        d.expression = "angle(look_x, look_y)"
+        d.expression = "degrees(atan2(loc[\"look_y\"], loc[\"look_x\"])) if atan2(loc[\"look_y\"], loc[\"look_x\"]) >= 0 else degrees(atan2(loc[\"look_y\"], loc[\"look_x\"])) +360"
         v = d.variables.new()
-        v.name = "look_x"
+        v.name = "loc"
         t = v.targets[0]
         t.id_type = 'OBJECT'
         t.id = bpy.data.objects[bpy.context.active_object.name]
-        t.data_path = "pose.bones[\"Properties\"][\"look_x\"]"
-        v = d.variables.new()
-        v.name = "look_y"
-        t = v.targets[0]
-        t.id_type = 'OBJECT'
-        t.id = bpy.data.objects[bpy.context.active_object.name]
-        t.data_path = "pose.bones[\"Properties\"][\"look_y\"]"
-
+        t.data_path = f'pose.bones["{Properties_bone.name}"]'
         
-        Movement_bone = bpy.context.active_object.pose.bones['Movement']            
+
+                
 
         Movement_bone.constraints.new('LIMIT_LOCATION')
         Movement_bone.constraints["Limit Location"].use_min_x = True
@@ -417,7 +442,7 @@ class BYANON_OT_anim_base(bpy.types.Operator):
         Movement_bone.constraints["Limit Location"].use_transform_limit = True
         Movement_bone.constraints["Limit Location"].owner_space = 'LOCAL'
         
-        AIM_bone = bpy.context.active_object.pose.bones['AIM']            
+               
 
         AIM_bone.constraints.new('LIMIT_LOCATION')
         AIM_bone.constraints["Limit Location"].use_min_x = True
@@ -523,23 +548,23 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                 n = list.index(b) % 10
                 match n:
                     case 1:
-                        const_create(b, "1-sqrt((-1-look_x)**2+(-1-look_y)**2)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "radius_look*((1-abs(angle_look-225)/45) if abs(angle_look-225)<=45 else 0)", variables, prop_names, self.suffix_enum)
                     case 2:
-                        const_create(b, "1-sqrt((0-look_x)**2+(-1-look_y)**2)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "radius_look*((1-abs(angle_look-270)/45) if abs(angle_look-270)<=45 else 0)", variables, prop_names, self.suffix_enum)
                     case 3:
-                        const_create(b, "1-sqrt((1-look_x)**2+(-1-look_y)**2)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "radius_look*((1-abs(angle_look-315)/45) if abs(angle_look-315)<=45 else 0)", variables, prop_names, self.suffix_enum)
                     case 4:
-                        const_create(b, "1-sqrt((-1-look_x)**2+(0-look_y)**2)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "radius_look*((1-abs(angle_look-180)/45) if abs(angle_look-180)<=45 else 0)", variables, prop_names, self.suffix_enum)
                     case 5:
-                        const_create(b, "1-sqrt((0-look_x)**2+(0-look_y)**2)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "1-radius_look", variables, prop_names, self.suffix_enum)
                     case 6:
-                        const_create(b, "1-sqrt((1-look_x)**2+(0-look_y)**2)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "radius_look*((1-abs(angle_look-(0 if angle_look < 315 else 360))/45) if abs(angle_look-(0 if angle_look < 315 else 360))<=45 else 0)", variables, prop_names, self.suffix_enum) #need adjusting
                     case 7:
-                        const_create(b, "1-sqrt((-1-look_x)**2+(1-look_y)**2)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "radius_look*((1-abs(angle_look-135)/45) if abs(angle_look-135)<=45 else 0)", variables, prop_names, self.suffix_enum)
                     case 8:
-                        const_create(b, "1-sqrt((0-look_x)**2+(1-look_y)**2)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "radius_look*((1-abs(angle_look-90)/45) if abs(angle_look-90)<=45 else 0)", variables, prop_names, self.suffix_enum)
                     case 9:
-                        const_create(b, "1-sqrt((1-look_x)**2+(1-look_y)**2)", variables, prop_names, self.suffix_enum)
+                        const_create(b, "radius_look*((1-abs(angle_look-45)/45) if abs(angle_look-45)<=45 else 0)", variables, prop_names, self.suffix_enum)
         for b in buffer:            
             print(b)            
             if (self.suffix_enum.lower()+"_" in b.lower() or self.suffix_enum.lower()+"\"" in b.lower() ) and "@" not in b and "layer" not in b and "$sequence" in b and "aim" not in b and "swim" not in b.lower() and "crouch" not in b.lower():
@@ -583,15 +608,24 @@ class BYANON_OT_anim_port(bpy.types.Operator):
             if list.index(b) != 0 and list.index(b) % 10 != 0:        
                 n = list.index(b) % 10
                 match n:
-                    case 1: const_create(b, "1-sqrt((-1-move_x)**2+(-1-move_y)**2)", variables, prop_names, self.suffix_enum)
-                    case 2: const_create(b, "1-sqrt((0-move_x)**2+(-1-move_y)**2)", variables, prop_names, self.suffix_enum)
-                    case 3: const_create(b, "1-sqrt((1-move_x)**2+(-1-move_y)**2)", variables, prop_names, self.suffix_enum)
-                    case 4: const_create(b, "1-sqrt((-1-move_x)**2+(0-move_y)**2)", variables, prop_names, self.suffix_enum)
-                    case 5: const_create("stand_" + self.suffix_enum, "1-sqrt((0-move_x)**2+(0-move_y)**2)", variables, prop_names, self.suffix_enum)
-                    case 6: const_create(b, "1-sqrt((1-move_x)**2+(0-move_y)**2)", variables, prop_names, self.suffix_enum)
-                    case 7: const_create(b, "1-sqrt((-1-move_x)**2+(1-move_y)**2)", variables, prop_names, self.suffix_enum)
-                    case 8: const_create(b, "1-sqrt((0-move_x)**2+(1-move_y)**2)", variables, prop_names, self.suffix_enum)
-                    case 9: const_create(b, "1-sqrt((1-move_x)**2+(1-move_y)**2)", variables, prop_names, self.suffix_enum)
+                    case 1:
+                        const_create(b, "radius_move*((1-abs(angle_move-225)/45) if abs(angle_move-225)<=45 else 0)", variables, prop_names, self.suffix_enum)
+                    case 2:
+                        const_create(b, "radius_move*((1-abs(angle_move-270)/45) if abs(angle_move-270)<=45 else 0)", variables, prop_names, self.suffix_enum)
+                    case 3:
+                        const_create(b, "radius_move*((1-abs(angle_move-315)/45) if abs(angle_move-315)<=45 else 0)", variables, prop_names, self.suffix_enum)
+                    case 4:
+                        const_create(b, "radius_move*((1-abs(angle_move-180)/45) if abs(angle_move-180)<=45 else 0)", variables, prop_names, self.suffix_enum)
+                    case 5:
+                        const_create("stand_" + self.suffix_enum, "1-radius_move", variables, prop_names, self.suffix_enum)
+                    case 6:
+                        const_create(b, "radius_move*((1-abs(angle_move-(0 if angle_move < 315 else 360))/45) if abs(angle_move-(0 if angle_move < 315 else 360))<=45 else 0)", variables, prop_names, self.suffix_enum) #need adjusting
+                    case 7:
+                        const_create(b, "radius_move*((1-abs(angle_move-135)/45) if abs(angle_move-135)<=45 else 0)", variables, prop_names, self.suffix_enum)
+                    case 8:
+                        const_create(b, "radius_move*((1-abs(angle_move-90)/45) if abs(angle_move-90)<=45 else 0)", variables, prop_names, self.suffix_enum)
+                    case 9:
+                        const_create(b, "radius_move*((1-abs(angle_move-45)/45) if abs(angle_move-45)<=45 else 0)", variables, prop_names, self.suffix_enum)
         bpy.data.actions.new("IK_" + self.suffix_enum)
         bpy.context.active_object.animation_data.action = bpy.data.actions["IK_" + self.suffix_enum]
         bpy.ops.object.mode_set(mode='POSE')
@@ -674,37 +708,23 @@ class BYANON_PT_anim_manager(bpy.types.Panel):
         self.layout.separator()
         self.layout.label(text='MANAGER')
     def draw(self, context):
-        layout = self.layout
-        layout.operator("object.update_custom_props", text="Refresh Custom Properties")
-        
+        layout = self.layout  
+        scene = context.scene
+        actionlist = scene.action_list      
         # Display the custom properties in a UI list
         layout.template_list("BYANON_UL_CustomPropsList", "", context.scene, "custom_props_collection", context.scene, "custom_props_collection_index")
+        layout.prop(actionlist, "actions_enum")
+        layout.operator("byanon.strip_add")
 # Operator to update custom properties list
-class BYANON_OT_UpdateCustomProps(bpy.types.Operator):
-    bl_idname = "object.update_custom_props"
-    bl_label = "Update Custom Properties"
+class BYANON_OT_strip_add(bpy.types.Operator):
+    bl_idname = "byanon.strip_add"
+    bl_label = "Add Action"
 
+    
     def execute(self, context):
-        obj = context.object
-        bone_name = "Properties"
-        bone_name2 = "Prop_holder"
-
-        if obj and obj.type == 'ARMATURE' and bone_name in obj.pose.bones:
-            # Clear any existing property UI items
-            context.scene.custom_props_collection.clear()
-
-            bone = obj.pose.bones[bone_name]
-            bone2 = obj.pose.bones[bone_name2]
-            for key in bone.keys():
-                if not key.startswith("_"):  # Skip internal properties
-                    item = context.scene.custom_props_collection.add()
-                    item.name = key
-                    item.value = key  # Store the property key instead of its value
-            for key in bone2.keys():
-                if not key.startswith("_"):  # Skip internal properties
-                    item = context.scene.custom_props_collection.add()
-                    item.name = key
-                    item.value = key  # Store the property key instead of its value
+        scene = context.scene
+        actionlist = scene.action_list
+        add_action_strip(action_name=actionlist.actions_enum, track_name="Add Anims")
         return {'FINISHED'}
 
 # Define a UI List to display custom properties
@@ -729,11 +749,9 @@ class BYANON_UL_CustomPropsList(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         obj = context.object
         bone_name = "Properties"
-        bone_name2 = "Prop_holder"
 
         if obj and obj.type == 'ARMATURE' and bone_name in obj.pose.bones:
             bone = obj.pose.bones[bone_name]
-            bone2 = obj.pose.bones[bone_name2]
 
             # Retrieve the actual custom property value by its name
             if item.name in bone.keys():
@@ -741,20 +759,79 @@ class BYANON_UL_CustomPropsList(bpy.types.UIList):
                 
                 # Directly display the property as a slider
                 row.prop(bone, f'["{item.name}"]', text=item.name, slider=True)
-            if item.name in bone2.keys():
-                row = layout.row()
+@persistent
+def update_custom_props_collection(scn = None):
+    obj = bpy.context.object
+    bone_name = "Properties"
+    props = bpy.context.scene.custom_props_collection
+    if obj and obj.type == 'ARMATURE' and bone_name in obj.pose.bones:
+        bone = obj.pose.bones[bone_name]
+        
+        # Clear the collection and populate it with the bone's custom properties
+        custom_props_collection = bpy.context.scene.custom_props_collection
+        custom_props_collection.clear()
+        
+        for key in bone.keys():
+            if not key.startswith("_"):  # Skip internal properties
+                item = custom_props_collection.add()
+                item.name = key
+                value = bone[key]
                 
-                # Directly display the property as a slider
-                row.prop(bone2, f'["{item.name}"]', text=item.name, slider=True)
+                # Dynamically set the value based on type
+                if isinstance(value, float):
+                    item.value = value
+                elif isinstance(value, int):
+                    item.value = float(value)  # Convert int to float for slider
+                else:
+                    item.value = 0.0  # Default for unsupported types
+def update_action_list(context):
+    obj = bpy.context.object
+    bone_name = "FOR_NLA"
+    items = bpy.context.scene.dynamic_action_items
+    if obj and obj.type == 'ARMATURE' and bone_name in obj.pose.bones:
+        bone = obj.pose.bones[bone_name]
+        
+        # Clear the collection and populate it with the bone's custom properties
+        for key in bone.constraints:
+            if key.type == 'ACTION':  # Skip internal properties
+                return[ (key.name, key.name, f"Constraint: {key.name}")]
+                '''value = bone[key]
+                
+                # Dynamically set the value based on type
+                if isinstance(value, float):
+                    item.value = value
+                elif isinstance(value, int):
+                    item.value = float(value)  # Convert int to float for slider
+                else:
+                    item.value = 0.0  # Default for unsupported types'''
+def get_enum_items(self, context):
+    # Return an empty list if no items are defined yet
+    obj = bpy.context.object
+    bone_name = "FOR_NLA"
+    items = bpy.context.scene.dynamic_action_items
+    if obj and obj.type == 'ARMATURE' and bone_name in obj.pose.bones:
+        bone = obj.pose.bones[bone_name]
+        
+        # Clear the collection and populate it with the bone's custom properties
+        return[ (key.name, key.name, f"Constraint: {key.name}") for key in bone.constraints if key.type == 'ACTION']
+    else:
+        return[]
+    
+
 # Custom property item for UI list display
 class CustomPropertyItem(bpy.types.PropertyGroup):
     name: bpy.props.StringProperty()
-    value: bpy.props.StringProperty()
+    value: bpy.props.FloatProperty()
+class ActionGroups(bpy.types.PropertyGroup):
+    actions_enum : bpy.props.EnumProperty(
+        name="Enumerator / Dropdown",
+        description="action list",
+        items=get_enum_items
+    )
 class BYANON_OT_nla_adder(bpy.types.Operator):
     pass
 classes = [BYANON_PT_anim_parent, BYANON_OT_anim_port, BYANON_OT_anim_optimize, BYANON_OT_anim_unoptimize, BYANON_OT_anim_scan, BYANON_OT_anim_base, BYANON_PT_anim_porter, BYANON_PT_anim_manager, CustomPropertyItem,
-    BYANON_OT_UpdateCustomProps,
-    BYANON_UL_CustomPropsList,]
+    BYANON_UL_CustomPropsList, ActionGroups, BYANON_OT_strip_add]
 def register():
     for i in classes:
         bpy.utils.register_class(i)
@@ -765,9 +842,16 @@ def register():
     )
     bpy.types.Scene.custom_props_collection = bpy.props.CollectionProperty(type=CustomPropertyItem)
     bpy.types.Scene.custom_props_collection_index = bpy.props.IntProperty()
+    bpy.types.Scene.action_list = bpy.props.PointerProperty(type=ActionGroups)
+    bpy.types.Scene.dynamic_action_items = []
+    bpy.app.handlers.depsgraph_update_post.append(update_custom_props_collection)
 def unregister():
     for i in classes:
         bpy.utils.unregister_class(i)
     del bpy.types.Scene.qc_file_path
     del bpy.types.Scene.anim_folder_path
-bpy.types.PoseBone
+    del bpy.types.Scene.custom_props_collection
+    del bpy.types.Scene.custom_props_collection_index
+    del bpy.types.Scene.action_list
+    del bpy.types.Scene.dynamic_action_items
+    bpy.app.handlers.depsgraph_update_post.remove(update_custom_props_collection)
