@@ -5,7 +5,7 @@ bl_info = {
     "name": "TF2 Game Animation Rigs",
     "author": "ByAnon",
     "version": (0, 1),
-    "blender": (4, 2, 0),
+    "blender": (4, 1, 0),
     "category": "Porting"
 }
 
