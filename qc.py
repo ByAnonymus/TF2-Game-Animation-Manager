@@ -5,6 +5,7 @@ from .bonegenerator import *
 from .additive_animation_porter import *
 from bpy.props import StringProperty, IntProperty, EnumProperty
 from .driver_defs import *
+#  C.collection.objects.link(bpy.data.objects["Scout FK Rig.001"])
 def add_action_strip(action_name, track_name):
     obj = bpy.context.active_object
     current_frame = bpy.context.scene.frame_current
