@@ -5,10 +5,13 @@ from bpy.types import Operator
 from bpy.props import *
 
 D = bpy.data
-def create_action(anim_name):
+def create_action(anim_name, action):
     bpy.context.active_object.animation_data.action = None
-    bpy.data.actions.new(anim_name)
-    bpy.context.active_object.animation_data.action = bpy.data.actions[anim_name]
+    if bpy.data.actions.get(action) == None:
+        bpy.data.actions.new(action)
+    slot = bpy.data.actions[action].slots.new("OBJECT", anim_name)
+    bpy.context.active_object.animation_data.action = bpy.data.actions[action]
+    bpy.context.active_object.animation_data.action_slot = slot
 class ANON_OT_load_additive(Operator, ImportHelper):
     bl_idname = 'tf2.loadadditive'
     bl_label = 'Load Additive Animation'

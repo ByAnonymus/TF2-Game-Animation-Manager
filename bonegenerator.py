@@ -239,6 +239,7 @@ def animation_correct(list, b):
     active_bone.constraints.remove(active_bone.constraints["Copy Location"])
     bpy.data.actions.remove(bpy.data.objects["Empty"].animation_data.action)
     bpy.data.objects.remove(bpy.data.objects["Empty"])
+    bpy.ops.view3d.snap_cursor_to_center()
 
 
 
