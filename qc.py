@@ -16,7 +16,7 @@ def add_action_strip(action_name, track_name):
         return
     
     # Find the action by name
-    action = bpy.data.actions.get("Anims")
+    action = bpy.data.actions.get(str(bpy.context.scene.qc_file_path).split("/")[-1].removesuffix("_animations.qc")+"Anims")
     slot = action.slots["OB"+action_name]
     if not slot:
         print(f"Error: Slot '{action_name}' not found.")
@@ -35,7 +35,7 @@ def add_action_strip(action_name, track_name):
     strip = track.strips.new(action_name, start=current_frame, action=action)
     strip.action_slot = slot
     # strip.action_frame_end = action.frame_range[1]
-    for i in bpy.data.actions['Anims'].layers['Layer'].strips[0].channels(slot.handle).fcurves:
+    for i in bpy.data.actions[str(bpy.context.scene.qc_file_path).split("/")[-1].removesuffix("_animations.qc")+"Anims"].layers['Layer'].strips[0].channels(slot.handle).fcurves:
         strip.action_frame_end = i.keyframe_points[-1].co[0]
     
     # Optional: Set the strip to run in "Hold" mode if you'd like it to hold its final frame
@@ -52,8 +52,10 @@ def add_ik_actions(ik_target, subtarget, b):
     bpy.context.active_object.pose.bones[ik_target].constraints.new('COPY_TRANSFORMS')
     bpy.context.active_object.pose.bones[ik_target].constraints["Copy Transforms"].target = bpy.context.active_object
     bpy.context.active_object.pose.bones[ik_target].constraints["Copy Transforms"].subtarget = subtarget
-    bpy.ops.nla.bake(frame_start=0, frame_end=int(bpy.data.actions[b].frame_range[1]), visual_keying=True, clear_constraints=True, use_current_action=True, bake_types={'POSE'})
-    #bpy.context.active_object.pose.bones[ik_target].constraints.remove(bpy.context.active_object.pose.bones[ik_target].constraints["Copy Transforms"])
+    for i in bpy.data.actions[str(bpy.context.scene.qc_file_path).split("/")[-1].removesuffix("_animations.qc")+"Anims"].layers['Layer'].strips[0].channels(bpy.context.active_object.animation_data.action_slot.handle).fcurves:
+        frame_end = int(i.keyframe_points[-1].co[0])
+    bpy.ops.nla.bake(frame_start=0, frame_end=frame_end, visual_keying=True, clear_constraints=True, use_current_action=True, bake_types={'POSE'})
+    # bpy.context.active_object.pose.bones[ik_target].constraints.remove(bpy.context.active_object.pose.bones[ik_target].constraints["Copy Transforms"])
     
                
 def setup_ikchain(end_bone, bone_name, ik_name,should_add_ik, **kwargs):
@@ -131,10 +133,10 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
             bpy.context.active_object.pose.bones[active_bone.name].constraints["Action"].name = anim_name
             constraint = bpy.context.active_object.pose.bones[active_bone.name].constraints[anim_name]
             constraint.use_eval_time = True
-            constraint.action = bpy.data.actions["Anims"]
-            constraint.action_slot = bpy.data.actions["Anims"].slots["OB"+anim_name]
-            constraint.frame_end = int(bpy.data.actions["Anims"].frame_range[1])
-            for i in bpy.data.actions['Anims'].layers['Layer'].strips[0].channels(constraint.action_slot.handle).fcurves:
+            constraint.action = bpy.data.actions[str(bpy.context.scene.qc_file_path).split("/")[-1].removesuffix("_animations.qc")+"Anims"]
+            constraint.action_slot = bpy.data.actions[str(bpy.context.scene.qc_file_path).split("/")[-1].removesuffix("_animations.qc")+"Anims"].slots["OB"+anim_name]
+            constraint.frame_end = int(bpy.data.actions[str(bpy.context.scene.qc_file_path).split("/")[-1].removesuffix("_animations.qc")+"Anims"].frame_range[1])
+            for i in bpy.data.actions[str(bpy.context.scene.qc_file_path).split("/")[-1].removesuffix("_animations.qc")+"Anims"].layers['Layer'].strips[0].channels(constraint.action_slot.handle).fcurves:
                 constraint.frame_end = int(i.keyframe_points[-1].co[0])
         elif for_nla == None:
             for active_bone in bpy.context.active_object.pose.bones:
@@ -143,9 +145,9 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
                     bpy.context.active_object.pose.bones[active_bone.name].constraints["Action"].name = anim_name
                     constraint = bpy.context.active_object.pose.bones[active_bone.name].constraints[anim_name]
 
-                    constraint.action = bpy.data.actions["Anims"]
-                    constraint.action_slot = bpy.data.actions["Anims"].slots["OB"+anim_name]
-                    for i in bpy.data.actions['Anims'].layers['Layer'].strips[0].channels(constraint.action_slot.handle).fcurves:
+                    constraint.action = bpy.data.actions[str(bpy.context.scene.qc_file_path).split("/")[-1].removesuffix("_animations.qc")+"Anims"]
+                    constraint.action_slot = bpy.data.actions[str(bpy.context.scene.qc_file_path).split("/")[-1].removesuffix("_animations.qc")+"Anims"].slots["OB"+anim_name]
+                    for i in bpy.data.actions[str(bpy.context.scene.qc_file_path).split("/")[-1].removesuffix("_animations.qc")+"Anims"].layers['Layer'].strips[0].channels(constraint.action_slot.handle).fcurves:
                         constraint.frame_end = int(i.keyframe_points[-1].co[0])
                     if constraint.frame_end == 0:
                         constraint.use_eval_time = True
@@ -213,8 +215,8 @@ def const_create(anim_name, expression, variables, prop_names, suffix_enum, **kw
         bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints["Action"].name = anim_name
         constraint = bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints[anim_name]
         constraint.use_eval_time = True
-        constraint.action = bpy.data.actions["Anims"]
-        constraint.frame_end = int(bpy.data.actions["Anims"].frame_range[1])
+        constraint.action = bpy.data.actions[str(bpy.context.scene.qc_file_path).split("/")[-1].removesuffix("_animations.qc")+"Anims"]
+        constraint.frame_end = int(bpy.data.actions[str(bpy.context.scene.qc_file_path).split("/")[-1].removesuffix("_animations.qc")+"Anims"].frame_range[1])
         for i in bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints:
             #i.driver_remove("influence")
             eval = constraint.driver_add("influence")
@@ -524,15 +526,16 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         prop_names = ["move_x", "move_y", "radius_move", "angle_move", "look_x", "look_y","radius_look", "angle_look", "Crouch"]
         variables = ["move_x", "move_y", "radius_move", "angle_move", "look_x", "look_y","radius_look", "angle_look", "Crouch"]
         import_options =[]
-        # if bpy.context.active_object.pose.bones["bip_hand_L"].constraints.get("IK") == None:
-        #     setup_ikchain("bip_hand_L", "weapon_bone", "bip_hand_L.001", should_add_ik=True)
-        # if bpy.context.active_object.pose.bones["bip_foot_L"].constraints.get("IK") == None:
-        #     setup_ikchain("bip_foot_L", "", "bip_foot_L.001", move=True, should_add_ik=False)
-        # bpy.context.active_object.data.collections["Base"].assign(bpy.context.active_object.pose.bones["bip_foot_L.001"])
-        # if bpy.context.active_object.pose.bones["bip_foot_R"].constraints.get("IK") == None:
-        #     setup_ikchain("bip_foot_R", "", "bip_foot_R.001", move=True, should_add_ik=False)
-        # bpy.context.active_object.data.collections["Base"].assign(bpy.context.active_object.pose.bones["bip_foot_R.001"])
+        if bpy.context.active_object.pose.bones["bip_hand_L"].constraints.get("IK") == None:
+            setup_ikchain("bip_hand_L", "weapon_bone", "bip_hand_L.001", should_add_ik=True)
+        if bpy.context.active_object.pose.bones["bip_foot_L"].constraints.get("IK") == None:
+            setup_ikchain("bip_foot_L", "", "bip_foot_L.001", move=True, should_add_ik=False)
+        bpy.context.active_object.data.collections["Base"].assign(bpy.context.active_object.pose.bones["bip_foot_L.001"])
+        if bpy.context.active_object.pose.bones["bip_foot_R"].constraints.get("IK") == None:
+            setup_ikchain("bip_foot_R", "", "bip_foot_R.001", move=True, should_add_ik=False)
+        bpy.context.active_object.data.collections["Base"].assign(bpy.context.active_object.pose.bones["bip_foot_R.001"])
         Properties_bone = bpy.context.active_object.pose.bones['Properties']
+        orig_object = bpy.context.active_object
         list = []
         line_index = -1
         for i in buffer:
@@ -552,7 +555,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         # bpy.ops.object.mode_set(mode='EDIT')
         # bpy.context.active_object.data.edit_bones['bip_pelvis'].parent= bpy.context.active_object.data.edit_bones['Movement_Parent']        
         # bpy.ops.object.mode_set(mode='POSE')
-        
+        Properties_bone = bpy.context.active_object.pose.bones['Properties']
         Properties_bone[self.suffix_enum] = float(0)
         Properties_bone.id_properties_ensure()  # Make sure the manager is updated
         property_manager = Properties_bone.id_properties_ui(self.suffix_enum)
@@ -568,7 +571,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         new_object.select_set(True)
         context.view_layer.objects.active = new_object
         Properties_bone = bpy.context.active_object.pose.bones['Properties']
-        del Properties_bone[f'{self.suffix_enum}']
+        # del Properties_bone[f'{self.suffix_enum}']
         list = []
         line_index = -1
         for i in buffer:
@@ -588,7 +591,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         for b in list:
             if list.index(b) != 0 and list.index(b) % 10 != 0 and self.suffix_enum in b:
                 ANON_OT_load_additive.filepath = folder + "/" + b + ".smd"
-                create_action(b, "Anims")
+                create_action(b, str(bpy.context.scene.qc_file_path).split("/")[-1].removesuffix("_animations.qc")+"Anims")
                 ANON_OT_load_additive.execute(ANON_OT_load_additive, context)
                 print("ported add anim " + b)
                 #animation_correct(list, b)
@@ -629,7 +632,7 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                         b =b.removesuffix("\" {\n").removeprefix("$sequence \"").removesuffix("/")
                         print(b)
                         ANON_OT_load_additive.filepath = folder + "/" + b + ".smd"
-                        create_action(b, "Anims")                                
+                        create_action(b, str(bpy.context.scene.qc_file_path).split("/")[-1].removesuffix("_animations.qc")+"Anims")                                
                         ANON_OT_load_additive.execute(ANON_OT_load_additive, context)
                         print("ported add anim " + b)
                         ANON_OT_load_additive.filepath = folder
@@ -655,15 +658,15 @@ class BYANON_OT_anim_port(bpy.types.Operator):
                 bpy.ops.import_scene.smd(filepath = folder + "/" + b + ".smd", rotMode = 'QUATERNION')
                 animation_correct(list, b)
                 bpy.context.scene.frame_set(0)
-                # add_ik_actions("bip_foot_L.001", "bip_foot_L", b)
-                # add_ik_actions("bip_foot_R.001", "bip_foot_R", b)
+                add_ik_actions("bip_foot_L.001", "bip_foot_L", b)
+                add_ik_actions("bip_foot_R.001", "bip_foot_R", b)
         bpy.ops.import_scene.smd(filepath = folder + "/" + "stand_" + self.suffix_enum + ".smd", rotMode = 'QUATERNION')
         bpy.context.scene.frame_set(0)
-        # bpy.ops.object.mode_set(mode='POSE')
-        # add_ik_actions("bip_foot_L.001", "bip_foot_L", "stand_" + self.suffix_enum)
-        # add_ik_actions("bip_foot_R.001", "bip_foot_R", "stand_" + self.suffix_enum)
-        #bpy.context.active_object.pose.bones["bip_foot_L"].constraints["IK"].enabled = True
-        #bpy.context.active_object.pose.bones["bip_foot_R"].constraints["IK"].enabled = False
+        bpy.ops.object.mode_set(mode='POSE')
+        add_ik_actions("bip_foot_L.001", "bip_foot_L", "stand_" + self.suffix_enum)
+        add_ik_actions("bip_foot_R.001", "bip_foot_R", "stand_" + self.suffix_enum)
+        # bpy.context.active_object.pose.bones["bip_foot_L"].constraints["IK"].enabled = True
+        # bpy.context.active_object.pose.bones["bip_foot_R"].constraints["IK"].enabled = False
         for b in list:
             if list.index(b) != 0 and list.index(b) % 10 != 0:        
                 n = list.index(b) % 10
@@ -694,32 +697,74 @@ class BYANON_OT_anim_port(bpy.types.Operator):
         bpy.ops.pose.rot_clear()
         # Properties_bone[self.suffix_enum] = 1.0
         bpy.context.scene.frame_set(0)
-        # bpy.ops.pose.select_all(action='DESELECT')
-        # bpy.context.active_object.data.bones.active = bpy.context.active_object.pose.bones["bip_hand_L.001"].bone
-        # bpy.context.active_object.pose.bones["bip_hand_L.001"].bone.select = True
-        # bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints.new('COPY_TRANSFORMS')
-        # bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints["Copy Transforms"].target = bpy.context.active_object
-        # bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints["Copy Transforms"].subtarget = "bip_hand_L"
-        # bpy.ops.constraint.apply(constraint="Copy Transforms", owner='BONE')
-        # bpy.context.active_object.pose.bones["bip_hand_L.001"].keyframe_insert(data_path="location", frame = 0)
-        # bpy.context.active_object.pose.bones["bip_hand_L.001"].keyframe_insert(data_path="rotation_quaternion", frame = 0)
+        bpy.ops.pose.select_all(action='DESELECT')
+        bpy.context.active_object.data.bones.active = bpy.context.active_object.pose.bones["bip_hand_L.001"].bone
+        bpy.context.active_object.pose.bones["bip_hand_L.001"].bone.select = True
+        bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints.new('COPY_TRANSFORMS')
+        bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints["Copy Transforms"].target = bpy.context.active_object
+        bpy.context.active_object.pose.bones["bip_hand_L.001"].constraints["Copy Transforms"].subtarget = "bip_hand_L"
+        bpy.ops.constraint.apply(constraint="Copy Transforms", owner='BONE')
+        bpy.context.active_object.pose.bones["bip_hand_L.001"].keyframe_insert(data_path="location", frame = 0)
+        bpy.context.active_object.pose.bones["bip_hand_L.001"].keyframe_insert(data_path="rotation_quaternion", frame = 0)
         bpy.context.active_object.animation_data.action = None
         bpy.ops.object.mode_set(mode='POSE')
         bpy.ops.pose.select_all(action='SELECT')
         bpy.ops.pose.loc_clear()
         bpy.ops.pose.rot_clear()
-        # if bpy.context.active_object.pose.bones["bip_foot_L"].constraints.get("IK") == None:
-        #     setup_ikchain("bip_foot_L", "", "bip_foot_L.001", move=True, should_add_ik=True)
-        # bpy.context.active_object.data.collections["Base"].unassign(bpy.context.active_object.pose.bones["bip_foot_L.001"])
-        # if bpy.context.active_object.pose.bones["bip_foot_R"].constraints.get("IK") == None:
-        #     setup_ikchain("bip_foot_R", "", "bip_foot_R.001", move=True, should_add_ik=True)
-        # const_create("IK_" + self.suffix_enum, "radius_look", variables, prop_names, self.suffix_enum, only_ik = True)
-        # bpy.context.active_object.data.collections["Base"].unassign(bpy.context.active_object.pose.bones["bip_foot_R.001"])
-        # bpy.context.active_object.data.collections["DO NOT TOUCH"].assign(bpy.context.active_object.pose.bones["bip_foot_L.001"])
-        # bpy.context.active_object.data.collections["DO NOT TOUCH"].assign(bpy.context.active_object.pose.bones["bip_hand_L.001"])
-        # Properties_bone[self.suffix_enum] = 0.0
-        # bpy.context.active_object.data.collections["DO NOT TOUCH"].assign(bpy.context.active_object.pose.bones["bip_foot_L.001"])
-        # bpy.context.active_object.data.collections["DO NOT TOUCH"].assign(bpy.context.active_object.pose.bones["bip_hand_L.001"])
+        if bpy.context.active_object.pose.bones["bip_foot_L"].constraints.get("IK") == None:
+            setup_ikchain("bip_foot_L", "", "bip_foot_L.001", move=True, should_add_ik=True)
+        bpy.context.active_object.data.collections["Base"].unassign(bpy.context.active_object.pose.bones["bip_foot_L.001"])
+        if bpy.context.active_object.pose.bones["bip_foot_R"].constraints.get("IK") == None:
+            setup_ikchain("bip_foot_R", "", "bip_foot_R.001", move=True, should_add_ik=True)
+        const_create("IK_" + self.suffix_enum, "radius_look", variables, prop_names, self.suffix_enum, only_ik = True)
+        bpy.context.active_object.data.collections["Base"].unassign(bpy.context.active_object.pose.bones["bip_foot_R.001"])
+        bpy.context.active_object.data.collections["DO NOT TOUCH"].assign(bpy.context.active_object.pose.bones["bip_foot_L.001"])
+        bpy.context.active_object.data.collections["DO NOT TOUCH"].assign(bpy.context.active_object.pose.bones["bip_hand_L.001"])
+        Properties_bone[self.suffix_enum] = 0.0
+        bpy.context.active_object.data.collections["DO NOT TOUCH"].assign(bpy.context.active_object.pose.bones["bip_foot_L.001"])
+        bpy.context.active_object.data.collections["DO NOT TOUCH"].assign(bpy.context.active_object.pose.bones["bip_hand_L.001"])
+        
+        bpy.context.scene.hisanimvars.hisanimtarget = bpy.context.active_object
+        # bpy.context.scene.hisanimvars.hierarchal_influence = True
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.select_all(False)
+        orig_object.select_set(True)
+        context.view_layer.objects.active = orig_object
+
+        bpy.ops.hisanim.attachto()
+        for i in orig_object.pose.bones:
+            if i.name not in orig_object.data.collections_all["Base"].bones:
+                for j in i.constraints:
+                    print(f"Checking Constraint {j.name}")
+                    if "BONEMERGE" in j.name:
+                        print(f"Found Constraint {j.name}")
+                        new_object.pose.bones[i.name].constraints.copy(j)
+                        new_object.pose.bones[i.name].constraints[j.name].target = orig_object
+                        new_object.pose.bones[i.name].constraints[j.name].subtarget = i.name
+                        i.constraints.remove(j)
+
+        eval = Properties_bone.driver_add(f'["{self.suffix_enum}"]')
+        d = eval.driver
+        d.type = "SCRIPTED"
+        d.expression = "var"
+        v = d.variables.new()
+        v.name = "var"
+        t = v.targets[0]
+        t.id_type = 'OBJECT'
+        t.id = bpy.data.objects[bpy.context.active_object.name]
+        t.data_path = f"pose.bones[\"Properties\"][\"{self.suffix_enum}\"]"
+
+        eval = orig_object.constraints[-1].driver_add(f"influence")
+        d = eval.driver
+        d.type = "SCRIPTED"
+        d.expression = "var"
+        v = d.variables.new()
+        v.name = "var"
+        t = v.targets[0]
+        t.id_type = 'OBJECT'
+        t.id = bpy.data.objects[bpy.context.active_object.name]
+        t.data_path = f"pose.bones[\"Properties\"][\"{self.suffix_enum}\"]"
+        
         return {'FINISHED'}
     
 class BYANON_PT_anim_parent(bpy.types.Panel):
